@@ -1,7 +1,9 @@
 package com.spongycode.chess_core
 
 import com.spongycode.chess_core.Constants.BOARD_SIZE
+import com.spongycode.chess_core.Constants.KING_MOVES
 import com.spongycode.chess_core.Constants.KNIGHT_MOVES
+import com.spongycode.chess_core.Constants.PAWN_MOVES
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
@@ -104,23 +106,149 @@ class ChessGame(
         }
     }
 
-    fun getMoves(start: String): List<String> {
+    private fun getKingMoves(start: String): List<String> {
         val moves = mutableListOf<String>()
-        val (startRow, startCol) = start.transformToPair()
-        chessBoard[startRow][startCol].piece ?: return moves
-        for (row in 8 downTo 1) {
-            for (col in 'A'..'H') {
-                val end = "${col}${row}"
-                if (validate(start, end, false)) {
-                    makeMove(start, end)
+        for (move in KING_MOVES) {
+            val end = start.offset(move.first, move.second)
+            if (validate(start, end)) {
+                makeMove(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
+    private fun getQueenMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDown = start.offset(offset, 0)
+            val endUp = start.offset(-offset, 0)
+            val endLeft = start.offset(0, -offset)
+            val endRight = start.offset(0, offset)
+            val endDownLeft = start.offset(offset, -offset)
+            val endDownRight = start.offset(offset, offset)
+            val endUpLeft = start.offset(-offset, -offset)
+            val endUpRight = start.offset(-offset, offset)
+            val movesList = listOf(
+                endDown,
+                endUp,
+                endLeft,
+                endRight,
+                endDownLeft,
+                endDownRight,
+                endUpLeft,
+                endUpRight
+            )
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMove(start, move)
                     if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                        moves.add(end.lowercase(Locale.getDefault()))
+                        moves.add(move.lowercase(Locale.getDefault()))
                     }
                     undo()
                 }
             }
+            offset++
         }
         return moves
+    }
+
+    private fun getRookMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDown = start.offset(offset, 0)
+            val endUp = start.offset(-offset, 0)
+            val endLeft = start.offset(0, -offset)
+            val endRight = start.offset(0, offset)
+            val movesList = listOf(endDown, endUp, endLeft, endRight)
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMove(start, move)
+                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                        moves.add(move.lowercase(Locale.getDefault()))
+                    }
+                    undo()
+                }
+            }
+            offset++
+        }
+        return moves
+    }
+
+    private fun getBishopMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDownLeft = start.offset(offset, -offset)
+            val endDownRight = start.offset(offset, offset)
+            val endUpLeft = start.offset(-offset, -offset)
+            val endUpRight = start.offset(-offset, offset)
+            val movesList = listOf(endDownLeft, endDownRight, endUpLeft, endUpRight)
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMove(start, move)
+                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                        moves.add(move.lowercase(Locale.getDefault()))
+                    }
+                    undo()
+                }
+            }
+            offset++
+        }
+        return moves
+    }
+
+    private fun getKnightMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        for (move in KNIGHT_MOVES) {
+            val end = start.offset(move.first, move.second)
+            if (validate(start, end)) {
+                makeMove(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
+    private fun getPawnMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        val (startRow, startCol) = start.transformToPair()
+        val piece = chessBoard[startRow][startCol].piece ?: return moves
+        for (move in PAWN_MOVES) {
+            val end = start.offset(
+                if (piece.getColor() == Color.WHITE) move.first else -move.first,
+                move.second
+            )
+            if (validate(start, end)) {
+                makeMove(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
+    fun getMoves(start: String): List<String> {
+        val (startRow, startCol) = start.transformToPair()
+        val piece = chessBoard[startRow][startCol].piece ?: return mutableListOf()
+        return when (piece.type) {
+            ChessPiece.Type.KING -> getKingMoves(start)
+            ChessPiece.Type.QUEEN -> getQueenMoves(start)
+            ChessPiece.Type.ROOK -> getRookMoves(start)
+            ChessPiece.Type.KNIGHT -> getKnightMoves(start)
+            ChessPiece.Type.BISHOP -> getBishopMoves(start)
+            ChessPiece.Type.PAWN -> getPawnMoves(start)
+        }
     }
 
     fun printBoard() {
@@ -282,10 +410,11 @@ class ChessGame(
         val dRow = endRow - startRow
         val dCol = endCol - startCol
 
-        return when (startPiece) {
-            is ChessPiece.BlackChessPiece -> {
-                when (startPiece.type) {
-                    ChessPiece.Type.KING -> {
+
+        return when (startPiece.type) {
+            ChessPiece.Type.KING -> {
+                when (startPiece) {
+                    is ChessPiece.BlackChessPiece -> {
                         (abs(dRow) <= 1 && abs(dCol) <= 1) || (blackKingMoveCount == 0 && dRow == 0 &&
                                 ((dCol == 2 && blackRooksMoved.second == 0) || (dCol == -2 && blackRooksMoved.first == 0)) &&
                                 !isCellUnderAttack(
@@ -306,32 +435,7 @@ class ChessGame(
                                 ))
                     }
 
-                    ChessPiece.Type.QUEEN -> ((dRow == 0 || dCol == 0) || (abs(dRow) == abs(dCol))) &&
-                            !piecesInBetween(start, end)
-
-                    ChessPiece.Type.ROOK -> (dRow == 0 || dCol == 0) && !piecesInBetween(start, end)
-                    ChessPiece.Type.KNIGHT -> KNIGHT_MOVES.contains(Pair(dRow, dCol))
-                    ChessPiece.Type.BISHOP -> abs(dRow) == abs(dCol) && !piecesInBetween(start, end)
-                    ChessPiece.Type.PAWN -> {
-                        val lastPiece = chessBoard[4][startCol + dCol].piece
-                        (dCol == 0 && (dRow == 1 || (startRow == 1 && dRow == 2 && !piecesInBetween(
-                            start,
-                            end
-                        ))) && endPiece == null) ||
-                                (abs(dCol) == 1 && dRow == 1 && endPiece != null) ||
-                                (startRow == 4 && abs(dCol) == 1 && dRow == 1 && endPiece == null &&
-                                        historyMoves.size > 0 && historyMoves.last().first == Pair(
-                                    "${'A' + startCol + dCol}2",
-                                    "${'A' + startCol + dCol}4"
-                                ) && (lastPiece is ChessPiece.WhiteChessPiece && lastPiece.type == ChessPiece.Type.PAWN)
-                                        && (!shouldMove || removePiece("${'A' + startCol + dCol}4") == Unit))
-                    }
-                }
-            }
-
-            is ChessPiece.WhiteChessPiece -> {
-                when (startPiece.type) {
-                    ChessPiece.Type.KING -> {
+                    is ChessPiece.WhiteChessPiece -> {
                         (abs(dRow) <= 1 && abs(dCol) <= 1) || (whiteKingMoveCount == 0 && dRow == 0 &&
                                 ((dCol == 2 && whiteRooksMoved.second == 0) || (dCol == -2 && whiteRooksMoved.first == 0)) &&
                                 !piecesInBetween(start, end) &&
@@ -352,14 +456,36 @@ class ChessGame(
                                     attackingPlayer = Color.BLACK
                                 ))
                     }
+                }
+            }
 
-                    ChessPiece.Type.QUEEN -> ((dRow == 0 || dCol == 0) || (abs(dRow) == abs(dCol))) &&
-                            !piecesInBetween(start, end)
+            ChessPiece.Type.QUEEN -> ((dRow == 0 || dCol == 0) || (abs(dRow) == abs(dCol))) &&
+                    !piecesInBetween(start, end)
 
-                    ChessPiece.Type.ROOK -> (dRow == 0 || dCol == 0) && !piecesInBetween(start, end)
-                    ChessPiece.Type.KNIGHT -> KNIGHT_MOVES.contains(Pair(dRow, dCol))
-                    ChessPiece.Type.BISHOP -> abs(dRow) == abs(dCol) && !piecesInBetween(start, end)
-                    ChessPiece.Type.PAWN -> {
+            ChessPiece.Type.ROOK -> (dRow == 0 || dCol == 0) && !piecesInBetween(start, end)
+
+            ChessPiece.Type.KNIGHT -> KNIGHT_MOVES.contains(Pair(dRow, dCol))
+
+            ChessPiece.Type.BISHOP -> abs(dRow) == abs(dCol) && !piecesInBetween(start, end)
+
+            ChessPiece.Type.PAWN -> {
+                when (startPiece) {
+                    is ChessPiece.BlackChessPiece -> {
+                        val lastPiece = chessBoard[4][startCol + dCol].piece
+                        (dCol == 0 && (dRow == 1 || (startRow == 1 && dRow == 2 && !piecesInBetween(
+                            start,
+                            end
+                        ))) && endPiece == null) ||
+                                (abs(dCol) == 1 && dRow == 1 && endPiece != null) ||
+                                (startRow == 4 && abs(dCol) == 1 && dRow == 1 && endPiece == null &&
+                                        historyMoves.size > 0 && historyMoves.last().first == Pair(
+                                    "${'A' + startCol + dCol}2",
+                                    "${'A' + startCol + dCol}4"
+                                ) && (lastPiece is ChessPiece.WhiteChessPiece && lastPiece.type == ChessPiece.Type.PAWN)
+                                        && (!shouldMove || removePiece("${'A' + startCol + dCol}4") == Unit))
+                    }
+
+                    is ChessPiece.WhiteChessPiece -> {
                         val lastPiece = chessBoard[3][startCol + dCol].piece
                         (dCol == 0 && (dRow == -1 || (startRow == 6 && dRow == -2 && !piecesInBetween(
                             start,
