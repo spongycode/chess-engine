@@ -6,7 +6,7 @@ fun main() {
 
     val chessGame = ChessGame(chessBoard = board)
 
-    while (chessGame.winner == null) {
+    while (chessGame.getWinner() == null) {
         chessGame.printBoard()
         try {
             val input = readln().split(" ")
@@ -23,7 +23,7 @@ fun main() {
             println(e)
         }
     }
-    println("WINNER: ${chessGame.winner}")
+    println("WINNER: ${chessGame.getWinner()}")
 }
 
 /** CHESS BOARD

@@ -2,6 +2,7 @@ package com.spongycode.chessapp.screen
 
 import androidx.lifecycle.ViewModel
 import com.spongycode.chess_core.ChessEngine
+import com.spongycode.chess_core.Color
 import com.spongycode.chess_core.toShortFormat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,7 +33,8 @@ class MainViewModel : ViewModel() {
         }
         _gameState.value = GameUiState(
             boardState = initialBoardState,
-            selectedPosition = null
+            selectedPosition = null,
+            winner = chessEngine.getWinner()
         )
     }
 
@@ -54,7 +56,8 @@ class MainViewModel : ViewModel() {
                 if (_gameState.value.selectedPosition == event.position) {
                     _gameState.value = _gameState.value.copy(
                         boardState = updatedBoardState,
-                        selectedPosition = null
+                        selectedPosition = null,
+                        winner = chessEngine.getWinner()
                     )
                     return
                 }
@@ -68,7 +71,8 @@ class MainViewModel : ViewModel() {
 
                 _gameState.value = _gameState.value.copy(
                     boardState = updatedBoardState,
-                    selectedPosition = event.position
+                    selectedPosition = event.position,
+                    winner = chessEngine.getWinner()
                 )
             }
 
@@ -87,7 +91,8 @@ class MainViewModel : ViewModel() {
 
 data class GameUiState(
     val boardState: Map<String, CellState> = mapOf(),
-    val selectedPosition: String? = null
+    val selectedPosition: String? = null,
+    val winner: Color? = null
 )
 
 data class CellState(

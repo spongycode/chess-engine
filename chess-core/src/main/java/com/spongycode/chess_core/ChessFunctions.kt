@@ -6,4 +6,5 @@ interface ChessFunctions {
     fun getMoves(start: String): List<String>
     fun undo()
     fun reset()
+    fun getWinner(): Color?
 }

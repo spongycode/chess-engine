@@ -117,6 +117,7 @@ fun MainScreen(
                 )
             }
         }
+        Text(fontSize = 25.sp, text = uiState.winner.toString())
     }
 
     if (showResetDialog) {

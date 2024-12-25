@@ -20,7 +20,7 @@ class ChessGame(
     private var blackKingMoveCount: Int = 0
     private var whiteRooksMoved: Pair<Int, Int> = Pair(0, 0)
     private var blackRooksMoved: Pair<Int, Int> = Pair(0, 0)
-    var winner: Color? = null
+    private var winner: Color? = null
 
     fun getBoard(): MutableList<MutableList<Cell>> {
         return chessBoard
@@ -29,7 +29,9 @@ class ChessGame(
     fun makeMove(start: String, end: String) {
         val canMove = validate(start, end)
         if (canMove) {
-            makeMoveAfterValidation(start, end)
+            makeMoveAfterValidation(start, end) {
+                checkForGameOverOrStalemate()
+            }
         } else {
             println("Invalid Move!")
         }
@@ -158,6 +160,7 @@ class ChessGame(
             }
             historyMoves.removeLast()
             currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+            winner = null
         }
     }
 
@@ -172,6 +175,10 @@ class ChessGame(
         blackKingMoveCount = 0
         whiteRooksMoved = Pair(0, 0)
         blackRooksMoved = Pair(0, 0)
+    }
+
+    fun getWinner(): Color? {
+        return winner
     }
 
     private fun getKingMoves(start: String): List<String> {
@@ -319,7 +326,7 @@ class ChessGame(
         chessBoard[row][col].piece = null
     }
 
-    private fun makeMoveAfterValidation(start: String, end: String) {
+    private fun makeMoveAfterValidation(start: String, end: String, afterMove: () -> Unit = {}) {
         val (startRow, startCol) = start.transformToPair()
         val startPiece = chessBoard[startRow][startCol].piece
         removePiece(start)
@@ -392,6 +399,7 @@ class ChessGame(
         if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING) {
             whiteKingPosition = end
         }
+        afterMove()
     }
 
     private fun addPiece(position: String, piece: ChessPiece) {
@@ -660,8 +668,7 @@ class ChessGame(
                     (opponentPlayer == Color.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.PAWN)))
+                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
                 ) {
                     return true
                 }
@@ -686,8 +693,7 @@ class ChessGame(
                     (opponentPlayer == Color.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.PAWN)))
+                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
                 ) {
                     return true
                 }
@@ -707,8 +713,7 @@ class ChessGame(
                     (opponentPlayer == Color.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.PAWN))) ||
+                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
                     (opponentPlayer == Color.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
@@ -733,8 +738,7 @@ class ChessGame(
                     (opponentPlayer == Color.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING) ||
-                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.PAWN))) ||
+                                    (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
                     (opponentPlayer == Color.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
@@ -769,5 +773,31 @@ class ChessGame(
             }
         }
         return false
+    }
+
+    private fun checkForGameOverOrStalemate() {
+        for (row in 8 downTo 1) {
+            for (col in 'A'..'H') {
+                val position = "${col}${row}"
+                val (r, c) = position.transformToPair()
+                if (chessBoard[r][c].piece?.getColor() == currentPlayer) {
+                    val moves = getMoves(position)
+                    if (moves.isNotEmpty()) {
+                        winner = null
+                        return
+                    }
+                }
+            }
+        }
+        winner =
+            if (isCellUnderAttack(
+                    if (currentPlayer == Color.WHITE) whiteKingPosition else blackKingPosition,
+                    attackingPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+                )
+            ) {
+                if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+            } else {
+                Color.DRAW
+            }
     }
 }

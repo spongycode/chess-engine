@@ -18,4 +18,6 @@ class ChessEngine : ChessFunctions {
         val newBoard = ChessBoard().getBoard()
         chessGame.reset(newBoard)
     }
+
+    override fun getWinner(): Color? = chessGame.getWinner()
 }
