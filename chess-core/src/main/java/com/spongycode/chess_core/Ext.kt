@@ -10,6 +10,15 @@ fun String.transformToPair(): Pair<Int, Int> {
     return Pair(row, col)
 }
 
+/**
+ * Returns in [row, col]
+ */
+fun String.offset(rowDiff: Int, colDiff: Int): String {
+    val row = this[1] - rowDiff
+    val col = this[0] + colDiff
+    return "$col$row"
+}
+
 fun ChessPiece.getColor(): Color {
     return when (this) {
         is ChessPiece.BlackChessPiece -> Color.BLACK
