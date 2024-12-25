@@ -625,10 +625,10 @@ class ChessGame(
         dummyCol = col
         for (move in KNIGHT_MOVES) {
             val (dRow, dCol) = move
-            dummyRow += dRow
-            dummyCol += dCol
-            if (dummyRow in 0 until BOARD_SIZE && dummyCol in 0 until BOARD_SIZE) {
-                val piece = chessBoard[dummyRow][dummyCol].piece
+            val knightAttackRow = dummyRow + dRow
+            val knightAttackCol = dummyCol + dCol
+            if (knightAttackRow in 0 until BOARD_SIZE && knightAttackCol in 0 until BOARD_SIZE) {
+                val piece = chessBoard[knightAttackRow][knightAttackCol].piece
                 if (
                     (opponentPlayer == Color.BLACK &&
                             piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KNIGHT) ||
