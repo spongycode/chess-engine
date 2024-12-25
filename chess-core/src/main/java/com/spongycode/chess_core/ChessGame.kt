@@ -29,213 +29,10 @@ class ChessGame(
     fun makeMove(start: String, end: String) {
         val canMove = validate(start, end)
         if (canMove) {
-            val (startRow, startCol) = start.transformToPair()
-            val startPiece = chessBoard[startRow][startCol].piece
-            removePiece(start)
-            val (endRow, endCol) = end.transformToPair()
-            val endPiece = chessBoard[endRow][endCol].piece
-            startPiece?.let {
-                addPiece(end, startPiece)
-            }
-            if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
-                abs(startCol - endCol) > 1
-            ) {
-                addPiece(
-                    start.offset(0, if (endCol - startCol > 0) 1 else -1),
-                    ChessPiece.BlackChessPiece(ChessPiece.Type.ROOK)
-                )
-                removePiece(end.offset(0, if (endCol - startCol > 0) 1 else -2))
-            }
-            if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING &&
-                abs(startCol - endCol) > 1
-            ) {
-                addPiece(
-                    start.offset(0, if (endCol - startCol > 0) 1 else -1),
-                    ChessPiece.WhiteChessPiece(ChessPiece.Type.ROOK)
-                )
-                removePiece(end.offset(0, if (endCol - startCol > 0) 1 else -2))
-            }
-            currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
-            historyMoves.add(
-                Pair(
-                    Pair(
-                        start.uppercase(Locale.getDefault()),
-                        end.uppercase(Locale.getDefault())
-                    ), endPiece
-                )
-            )
-            // marking castling states
-            if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING) {
-                blackKingMoveCount++
-                if (endCol - startCol == 2) {
-                    blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
-                } else if (endCol - startCol == -2) {
-                    blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
-                }
-            } else if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING) {
-                whiteKingMoveCount++
-                if (endCol - startCol == 2) {
-                    whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
-                } else if (endCol - startCol == -2) {
-                    whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
-                }
-            } else if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
-                if (start == "a8") {
-                    blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
-                }
-                if (start == "h8") {
-                    blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
-                }
-            } else if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
-                if (start == "a1") {
-                    whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
-                }
-                if (start == "h1") {
-                    whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
-                }
-            }
-
-            if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING) {
-                blackKingPosition = end
-            }
-            if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING) {
-                whiteKingPosition = end
-            }
+            makeMoveAfterValidation(start, end)
         } else {
             println("Invalid Move!")
         }
-    }
-
-    private fun getKingMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        for (move in KING_MOVES) {
-            val end = start.offset(move.first, move.second)
-            if (validate(start, end)) {
-                makeMove(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                    moves.add(end.lowercase(Locale.getDefault()))
-                }
-                undo()
-            }
-        }
-        return moves
-    }
-
-    private fun getQueenMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        var offset = 1
-        while (offset <= 8) {
-            val endDown = start.offset(offset, 0)
-            val endUp = start.offset(-offset, 0)
-            val endLeft = start.offset(0, -offset)
-            val endRight = start.offset(0, offset)
-            val endDownLeft = start.offset(offset, -offset)
-            val endDownRight = start.offset(offset, offset)
-            val endUpLeft = start.offset(-offset, -offset)
-            val endUpRight = start.offset(-offset, offset)
-            val movesList = listOf(
-                endDown,
-                endUp,
-                endLeft,
-                endRight,
-                endDownLeft,
-                endDownRight,
-                endUpLeft,
-                endUpRight
-            )
-            for (move in movesList) {
-                if (validate(start, move)) {
-                    makeMove(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                        moves.add(move.lowercase(Locale.getDefault()))
-                    }
-                    undo()
-                }
-            }
-            offset++
-        }
-        return moves
-    }
-
-    private fun getRookMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        var offset = 1
-        while (offset <= 8) {
-            val endDown = start.offset(offset, 0)
-            val endUp = start.offset(-offset, 0)
-            val endLeft = start.offset(0, -offset)
-            val endRight = start.offset(0, offset)
-            val movesList = listOf(endDown, endUp, endLeft, endRight)
-            for (move in movesList) {
-                if (validate(start, move)) {
-                    makeMove(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                        moves.add(move.lowercase(Locale.getDefault()))
-                    }
-                    undo()
-                }
-            }
-            offset++
-        }
-        return moves
-    }
-
-    private fun getBishopMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        var offset = 1
-        while (offset <= 8) {
-            val endDownLeft = start.offset(offset, -offset)
-            val endDownRight = start.offset(offset, offset)
-            val endUpLeft = start.offset(-offset, -offset)
-            val endUpRight = start.offset(-offset, offset)
-            val movesList = listOf(endDownLeft, endDownRight, endUpLeft, endUpRight)
-            for (move in movesList) {
-                if (validate(start, move)) {
-                    makeMove(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                        moves.add(move.lowercase(Locale.getDefault()))
-                    }
-                    undo()
-                }
-            }
-            offset++
-        }
-        return moves
-    }
-
-    private fun getKnightMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        for (move in KNIGHT_MOVES) {
-            val end = start.offset(move.first, move.second)
-            if (validate(start, end)) {
-                makeMove(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                    moves.add(end.lowercase(Locale.getDefault()))
-                }
-                undo()
-            }
-        }
-        return moves
-    }
-
-    private fun getPawnMoves(start: String): List<String> {
-        val moves = mutableListOf<String>()
-        val (startRow, startCol) = start.transformToPair()
-        val piece = chessBoard[startRow][startCol].piece ?: return moves
-        for (move in PAWN_MOVES) {
-            val end = start.offset(
-                if (piece.getColor() == Color.WHITE) move.first else -move.first,
-                move.second
-            )
-            if (validate(start, end)) {
-                makeMove(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                    moves.add(end.lowercase(Locale.getDefault()))
-                }
-                undo()
-            }
-        }
-        return moves
     }
 
     fun getMoves(start: String): List<String> {
@@ -377,6 +174,138 @@ class ChessGame(
         blackRooksMoved = Pair(0, 0)
     }
 
+    private fun getKingMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        for (move in KING_MOVES) {
+            val end = start.offset(move.first, move.second)
+            if (validate(start, end)) {
+                makeMoveAfterValidation(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
+    private fun getQueenMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDown = start.offset(offset, 0)
+            val endUp = start.offset(-offset, 0)
+            val endLeft = start.offset(0, -offset)
+            val endRight = start.offset(0, offset)
+            val endDownLeft = start.offset(offset, -offset)
+            val endDownRight = start.offset(offset, offset)
+            val endUpLeft = start.offset(-offset, -offset)
+            val endUpRight = start.offset(-offset, offset)
+            val movesList = listOf(
+                endDown,
+                endUp,
+                endLeft,
+                endRight,
+                endDownLeft,
+                endDownRight,
+                endUpLeft,
+                endUpRight
+            )
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMoveAfterValidation(start, move)
+                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                        moves.add(move.lowercase(Locale.getDefault()))
+                    }
+                    undo()
+                }
+            }
+            offset++
+        }
+        return moves
+    }
+
+    private fun getRookMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDown = start.offset(offset, 0)
+            val endUp = start.offset(-offset, 0)
+            val endLeft = start.offset(0, -offset)
+            val endRight = start.offset(0, offset)
+            val movesList = listOf(endDown, endUp, endLeft, endRight)
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMoveAfterValidation(start, move)
+                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                        moves.add(move.lowercase(Locale.getDefault()))
+                    }
+                    undo()
+                }
+            }
+            offset++
+        }
+        return moves
+    }
+
+    private fun getBishopMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        var offset = 1
+        while (offset <= 8) {
+            val endDownLeft = start.offset(offset, -offset)
+            val endDownRight = start.offset(offset, offset)
+            val endUpLeft = start.offset(-offset, -offset)
+            val endUpRight = start.offset(-offset, offset)
+            val movesList = listOf(endDownLeft, endDownRight, endUpLeft, endUpRight)
+            for (move in movesList) {
+                if (validate(start, move)) {
+                    makeMoveAfterValidation(start, move)
+                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                        moves.add(move.lowercase(Locale.getDefault()))
+                    }
+                    undo()
+                }
+            }
+            offset++
+        }
+        return moves
+    }
+
+    private fun getKnightMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        for (move in KNIGHT_MOVES) {
+            val end = start.offset(move.first, move.second)
+            if (validate(start, end)) {
+                makeMoveAfterValidation(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
+    private fun getPawnMoves(start: String): List<String> {
+        val moves = mutableListOf<String>()
+        val (startRow, startCol) = start.transformToPair()
+        val piece = chessBoard[startRow][startCol].piece ?: return moves
+        for (move in PAWN_MOVES) {
+            val end = start.offset(
+                if (piece.getColor() == Color.WHITE) move.first else -move.first,
+                move.second
+            )
+            if (validate(start, end, false)) {
+                makeMoveAfterValidation(start, end)
+                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    moves.add(end.lowercase(Locale.getDefault()))
+                }
+                undo()
+            }
+        }
+        return moves
+    }
+
     private fun removePiece(position: String) {
         val (row, col) = position.transformToPair()
         val piece = chessBoard[row][col].piece
@@ -388,6 +317,81 @@ class ChessGame(
             winner = Color.BLACK
         }
         chessBoard[row][col].piece = null
+    }
+
+    private fun makeMoveAfterValidation(start: String, end: String) {
+        val (startRow, startCol) = start.transformToPair()
+        val startPiece = chessBoard[startRow][startCol].piece
+        removePiece(start)
+        val (endRow, endCol) = end.transformToPair()
+        val endPiece = chessBoard[endRow][endCol].piece
+        startPiece?.let {
+            addPiece(end, startPiece)
+        }
+        if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
+            abs(startCol - endCol) > 1
+        ) {
+            addPiece(
+                start.offset(0, if (endCol - startCol > 0) 1 else -1),
+                ChessPiece.BlackChessPiece(ChessPiece.Type.ROOK)
+            )
+            removePiece(end.offset(0, if (endCol - startCol > 0) 1 else -2))
+        }
+        if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING &&
+            abs(startCol - endCol) > 1
+        ) {
+            addPiece(
+                start.offset(0, if (endCol - startCol > 0) 1 else -1),
+                ChessPiece.WhiteChessPiece(ChessPiece.Type.ROOK)
+            )
+            removePiece(end.offset(0, if (endCol - startCol > 0) 1 else -2))
+        }
+        currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+        historyMoves.add(
+            Pair(
+                Pair(
+                    start.uppercase(Locale.getDefault()),
+                    end.uppercase(Locale.getDefault())
+                ), endPiece
+            )
+        )
+        // marking castling states
+        if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING) {
+            blackKingMoveCount++
+            if (endCol - startCol == 2) {
+                blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
+            } else if (endCol - startCol == -2) {
+                blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
+            }
+        } else if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING) {
+            whiteKingMoveCount++
+            if (endCol - startCol == 2) {
+                whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
+            } else if (endCol - startCol == -2) {
+                whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
+            }
+        } else if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
+            if (start == "a8") {
+                blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
+            }
+            if (start == "h8") {
+                blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
+            }
+        } else if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
+            if (start == "a1") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
+            }
+            if (start == "h1") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
+            }
+        }
+
+        if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING) {
+            blackKingPosition = end
+        }
+        if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.KING) {
+            whiteKingPosition = end
+        }
     }
 
     private fun addPiece(position: String, piece: ChessPiece) {
@@ -409,7 +413,6 @@ class ChessGame(
         if (endPiece != null && (endPiece.getColor() == startPiece.getColor())) return false
         val dRow = endRow - startRow
         val dCol = endCol - startCol
-
 
         return when (startPiece.type) {
             ChessPiece.Type.KING -> {
