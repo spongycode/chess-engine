@@ -10,5 +10,4 @@ java {
 
 dependencies {
     testImplementation(libs.junit)
-    testImplementation(libs.junit.jupiter)
 }
