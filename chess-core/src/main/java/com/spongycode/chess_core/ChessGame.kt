@@ -149,6 +149,22 @@ class ChessGame(
                         whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second - 1)
                     }
                 }
+                if (removedPiece is ChessPiece.WhiteChessPiece && removedPiece.type == ChessPiece.Type.ROOK) {
+                    if (end.uppercase(Locale.ROOT) == "A1") {
+                        whiteRooksMoved = Pair(whiteRooksMoved.first - 1, whiteRooksMoved.second)
+                    }
+                    if (end.uppercase(Locale.ROOT) == "H1") {
+                        whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second - 1)
+                    }
+                }
+                if (removedPiece is ChessPiece.BlackChessPiece && removedPiece.type == ChessPiece.Type.ROOK) {
+                    if (end.uppercase(Locale.ROOT) == "A8") {
+                        whiteRooksMoved = Pair(whiteRooksMoved.first - 1, whiteRooksMoved.second)
+                    }
+                    if (end.uppercase(Locale.ROOT) == "H8") {
+                        whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second - 1)
+                    }
+                }
                 chessBoard[endPositionRow][endPositionCol].piece = removedPiece
                 chessBoard[startPositionRow][startPositionCol].piece = startPiece
             }
@@ -334,6 +350,22 @@ class ChessGame(
         val endPiece = chessBoard[endRow][endCol].piece
         startPiece?.let {
             addPiece(end, startPiece)
+        }
+        if (endPiece is ChessPiece.WhiteChessPiece && endPiece.type == ChessPiece.Type.ROOK) {
+            if (end.uppercase(Locale.ROOT) == "A1") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
+            }
+            if (end.uppercase(Locale.ROOT) == "H1") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
+            }
+        }
+        if (endPiece is ChessPiece.BlackChessPiece && endPiece.type == ChessPiece.Type.ROOK) {
+            if (end.uppercase(Locale.ROOT) == "A8") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
+            }
+            if (end.uppercase(Locale.ROOT) == "H8") {
+                whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
+            }
         }
         if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
             abs(startCol - endCol) > 1
