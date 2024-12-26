@@ -68,6 +68,26 @@ class ChessGame(
         println()
     }
 
+    fun getBoardAsString(): String{
+        val game = StringBuilder()
+        for (row in 8 downTo 1) {
+            game.append("$row  ")
+            for (col in 'A'..'H') {
+                val position = "${col}${row}"
+                val cell = position.transformToPair()
+                game.append(chessBoard[cell.first][cell.second].piece.toShortFormat())
+                game.append(" ")
+            }
+            game.append("\n")
+        }
+        game.append("   ")
+        for (col in 'A'..'H') {
+            game.append(" $col ")
+        }
+        game.append("\n")
+        return game.toString()
+    }
+
     fun undo() {
         if (historyMoves.isNotEmpty()) {
             val (start, end) = historyMoves.last().first
