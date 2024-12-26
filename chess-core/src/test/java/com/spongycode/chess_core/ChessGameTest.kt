@@ -34,6 +34,10 @@ class ChessGameTest {
         for (game in drawGames) {
             validateGame(game, expectedResult = Color.DRAW)
         }
+
+        for (game in drawGames) {
+            validateUndoMovements(game, expectedResult = Color.DRAW)
+        }
     }
 
     @Test
@@ -46,6 +50,10 @@ class ChessGameTest {
         for (game in nullGames) {
             validateGame(game, expectedResult = null)
         }
+
+        for (game in nullGames) {
+            validateUndoMovements(game, expectedResult = null)
+        }
     }
 
     @Test
@@ -57,6 +65,10 @@ class ChessGameTest {
 
         for (game in whiteWinGames) {
             validateGame(game, expectedResult = Color.WHITE)
+        }
+
+        for (game in whiteWinGames) {
+            validateUndoMovements(game, expectedResult = Color.WHITE)
         }
     }
 
@@ -72,6 +84,10 @@ class ChessGameTest {
         for (game in blackWinGames) {
             validateGame(game, expectedResult = Color.BLACK)
         }
+
+        for (game in blackWinGames) {
+            validateUndoMovements(game, expectedResult = Color.BLACK)
+        }
     }
 
     private fun validateGame(
@@ -85,12 +101,11 @@ class ChessGameTest {
 
         var index = 0
         while (index < moves.size && chessGame.getWinner() == null) {
-            games.add(chessGame.getBoardAsString())
             val (start, end) = moves[index]
             chessGame.makeMove(start, end)
             index++
+            games.add(chessGame.getBoardAsString())
         }
-        games.add(chessGame.getBoardAsString())
 
         for (i in 1 until games.size) {
             assertNotEquals(
@@ -98,6 +113,57 @@ class ChessGameTest {
                 games[i - 1],
                 games[i]
             )
+        }
+
+        assertEquals(
+            "Game winner should match expected result",
+            expectedResult,
+            chessGame.getWinner()
+        )
+    }
+
+    private fun validateUndoMovements(
+        game: Pair<List<Pair<String, String>>, Color?>,
+        expectedResult: Color?
+    ) {
+        setup()
+
+        val move = game.first
+        val games = mutableListOf<String>()
+
+        var index = 0
+        while (index < move.size && chessGame.getWinner() == null) {
+            val (start, end) = move[index]
+            chessGame.makeMove(start, end)
+            index++
+            games.add(chessGame.getBoardAsString())
+        }
+
+        val newChessBoard = ChessBoard()
+        val newBoard = newChessBoard.getBoard()
+        chessGame.reset(newBoard)
+
+        for (frontIndex in move.indices) {
+            var (start, end) = move[frontIndex]
+            chessGame.makeMove(start, end)
+
+            var backIndex = frontIndex
+            while (backIndex > 0) {
+                chessGame.undo()
+                backIndex--
+                val undoGame = chessGame.getBoardAsString()
+                assertEquals(
+                    "Undo failed at index $backIndex when coming back from $frontIndex",
+                    undoGame,
+                    games[backIndex]
+                )
+            }
+            while (backIndex < frontIndex) {
+                backIndex++
+                start = move[backIndex].first
+                end = move[backIndex].second
+                chessGame.makeMove(start, end)
+            }
         }
 
         assertEquals(
