@@ -159,10 +159,10 @@ class ChessGame(
                 }
                 if (removedPiece is ChessPiece.BlackChessPiece && removedPiece.type == ChessPiece.Type.ROOK) {
                     if (end.uppercase(Locale.ROOT) == "A8") {
-                        whiteRooksMoved = Pair(whiteRooksMoved.first - 1, whiteRooksMoved.second)
+                        blackRooksMoved = Pair(blackRooksMoved.first - 1, blackRooksMoved.second)
                     }
                     if (end.uppercase(Locale.ROOT) == "H8") {
-                        whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second - 1)
+                        blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second - 1)
                     }
                 }
                 chessBoard[endPositionRow][endPositionCol].piece = removedPiece
@@ -361,10 +361,10 @@ class ChessGame(
         }
         if (endPiece is ChessPiece.BlackChessPiece && endPiece.type == ChessPiece.Type.ROOK) {
             if (end.uppercase(Locale.ROOT) == "A8") {
-                whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
+                blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
             }
             if (end.uppercase(Locale.ROOT) == "H8") {
-                whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
+                blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
             }
         }
         if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
@@ -410,17 +410,17 @@ class ChessGame(
                 whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
             }
         } else if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
-            if (start == "a8") {
+            if (start.lowercase(Locale.ROOT) == "a8") {
                 blackRooksMoved = Pair(blackRooksMoved.first + 1, blackRooksMoved.second)
             }
-            if (start == "h8") {
+            if (start.lowercase(Locale.ROOT) == "h8") {
                 blackRooksMoved = Pair(blackRooksMoved.first, blackRooksMoved.second + 1)
             }
         } else if (startPiece is ChessPiece.WhiteChessPiece && startPiece.type == ChessPiece.Type.ROOK) {
-            if (start == "a1") {
+            if (start.lowercase(Locale.ROOT) == "a1") {
                 whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
             }
-            if (start == "h1") {
+            if (start.lowercase(Locale.ROOT) == "h1") {
                 whiteRooksMoved = Pair(whiteRooksMoved.first, whiteRooksMoved.second + 1)
             }
         }
