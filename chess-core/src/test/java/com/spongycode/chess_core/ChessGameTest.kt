@@ -26,9 +26,10 @@ class ChessGameTest {
         val drawGames = listOf(
             drawMoves1,
             drawMoves2,
-            // drawMoves3, TODO: Pawn Promotion: test will fail
+            drawMoves3,
             drawMoves4,
-            drawMoves5
+            drawMoves5,
+            drawMoves6
         )
 
         for (game in drawGames) {
@@ -60,7 +61,8 @@ class ChessGameTest {
     fun testWhiteWinGames() {
         val whiteWinGames = listOf(
             whiteMoves1,
-            whiteMoves2
+            whiteMoves2,
+            whiteMoves3
         )
 
         for (game in whiteWinGames) {
@@ -78,7 +80,8 @@ class ChessGameTest {
             blackMoves1,
             blackMoves2,
             blackMoves3,
-            blackMoves4
+            blackMoves4,
+            blackMoves5
         )
 
         for (game in blackWinGames) {
@@ -110,8 +113,8 @@ class ChessGameTest {
         for (i in 1 until games.size) {
             assertNotEquals(
                 "Board state should change after move ${moves[i - 1]}",
-                games[i - 1],
-                games[i]
+                "\n${games[i - 1]}",
+                "\n${games[i]}"
             )
         }
 
@@ -154,8 +157,8 @@ class ChessGameTest {
                 val undoGame = chessGame.getBoardAsString()
                 assertEquals(
                     "Undo failed at index $backIndex when coming back from $frontIndex",
-                    undoGame,
-                    games[backIndex]
+                    "\n$undoGame",
+                    "\n${games[backIndex]}"
                 )
             }
             while (backIndex < frontIndex) {

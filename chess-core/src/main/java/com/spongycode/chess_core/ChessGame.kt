@@ -12,7 +12,7 @@ import kotlin.math.min
 class ChessGame(
     var chessBoard: MutableList<MutableList<Cell>>
 ) {
-    private val historyMoves: MutableList<Pair<Pair<String, String>, ChessPiece?>> = mutableListOf()
+    private val historyMoves: MutableList<HistoryMove> = mutableListOf()
     private var currentPlayer: Color = Color.WHITE
     private var blackKingPosition: String = "E8"
     private var whiteKingPosition: String = "E1"
@@ -68,7 +68,7 @@ class ChessGame(
         println()
     }
 
-    fun getBoardAsString(): String{
+    fun getBoardAsString(): String {
         val game = StringBuilder()
         for (row in 8 downTo 1) {
             game.append("$row  ")
@@ -90,13 +90,26 @@ class ChessGame(
 
     fun undo() {
         if (historyMoves.isNotEmpty()) {
-            val (start, end) = historyMoves.last().first
+            val (start, end) = historyMoves.last().move
             val (startPositionRow, startPositionCol) = start.transformToPair()
             val (endPositionRow, endPositionCol) = end.transformToPair()
-            val removedPiece = historyMoves.last().second
+            val removedPiece = historyMoves.last().removedPiece
+            val pawnPromotedPiece = historyMoves.last().pawnPromotedPiece
             val startPiece = chessBoard[endPositionRow][endPositionCol].piece
+            // check for pawn promotion
+            if (pawnPromotedPiece != null) {
+                chessBoard[endPositionRow][endPositionCol].piece = removedPiece
+                val dRow = endPositionRow - startPositionRow
+                if (dRow < 0) {
+                    chessBoard[startPositionRow][startPositionCol].piece =
+                        ChessPiece.WhiteChessPiece(ChessPiece.Type.PAWN)
+                } else {
+                    chessBoard[startPositionRow][startPositionCol].piece =
+                        ChessPiece.BlackChessPiece(ChessPiece.Type.PAWN)
+                }
+            }
             // check for castling
-            if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
+            else if (startPiece is ChessPiece.BlackChessPiece && startPiece.type == ChessPiece.Type.KING &&
                 startPositionRow == endPositionRow && abs(startPositionCol - endPositionCol) > 1
             ) {
                 blackKingMoveCount--
@@ -341,7 +354,14 @@ class ChessGame(
             if (validate(start, end, false)) {
                 makeMoveAfterValidation(start, end)
                 if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
-                    moves.add(end.lowercase(Locale.getDefault()))
+                    val (endRow, _) = end.transformToPair()
+                    // pawn promotion case
+                    if (endRow == 0 || endRow == BOARD_SIZE - 1) {
+                        val pawnPromotionMove = "$end+"
+                        moves.add(pawnPromotionMove.lowercase(Locale.getDefault()))
+                    } else {
+                        moves.add(end.lowercase(Locale.getDefault()))
+                    }
                 }
                 undo()
             }
@@ -351,14 +371,6 @@ class ChessGame(
 
     private fun removePiece(position: String) {
         val (row, col) = position.transformToPair()
-        val piece = chessBoard[row][col].piece
-        // Todo: remove the static winner logic
-        if (piece is ChessPiece.BlackChessPiece && currentPlayer != Color.BLACK && piece.type == ChessPiece.Type.KING) {
-            winner = Color.WHITE
-        }
-        if (piece is ChessPiece.WhiteChessPiece && currentPlayer != Color.WHITE && piece.type == ChessPiece.Type.KING) {
-            winner = Color.BLACK
-        }
         chessBoard[row][col].piece = null
     }
 
@@ -368,9 +380,6 @@ class ChessGame(
         removePiece(start)
         val (endRow, endCol) = end.transformToPair()
         val endPiece = chessBoard[endRow][endCol].piece
-        startPiece?.let {
-            addPiece(end, startPiece)
-        }
         if (endPiece is ChessPiece.WhiteChessPiece && endPiece.type == ChessPiece.Type.ROOK) {
             if (end.uppercase(Locale.ROOT) == "A1") {
                 whiteRooksMoved = Pair(whiteRooksMoved.first + 1, whiteRooksMoved.second)
@@ -405,13 +414,40 @@ class ChessGame(
             )
             removePiece(end.offset(0, if (endCol - startCol > 0) 1 else -2))
         }
+        var pawnPromotedPiece: ChessPiece? = null
+        if (startPiece?.type == ChessPiece.Type.PAWN && end.length == 3) {
+            val dRow = endRow - startRow
+            val pieceType = when (end.last().uppercaseChar()) {
+                'Q' -> ChessPiece.Type.QUEEN
+                'R' -> ChessPiece.Type.ROOK
+                'B' -> ChessPiece.Type.BISHOP
+                'N' -> ChessPiece.Type.KNIGHT
+                else -> ChessPiece.Type.PAWN
+            }
+            if (dRow < 0) {
+                pawnPromotedPiece = ChessPiece.WhiteChessPiece(pieceType)
+                addPiece(end.take(2), pawnPromotedPiece)
+            } else {
+                pawnPromotedPiece = ChessPiece.BlackChessPiece(pieceType)
+                addPiece(end.take(2), pawnPromotedPiece)
+            }
+        }
+        startPiece?.let {
+            if (pawnPromotedPiece == null) {
+                addPiece(end, startPiece)
+            } else {
+                addPiece(end, pawnPromotedPiece)
+            }
+        }
         currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
         historyMoves.add(
-            Pair(
-                Pair(
-                    start.uppercase(Locale.getDefault()),
-                    end.uppercase(Locale.getDefault())
-                ), endPiece
+            HistoryMove(
+                move = Pair(
+                    start.uppercase(Locale.ROOT),
+                    end.uppercase(Locale.ROOT)
+                ),
+                removedPiece = endPiece,
+                pawnPromotedPiece = pawnPromotedPiece
             )
         )
         // marking castling states
@@ -541,7 +577,7 @@ class ChessGame(
                         ))) && endPiece == null) ||
                                 (abs(dCol) == 1 && dRow == 1 && endPiece != null) ||
                                 (startRow == 4 && abs(dCol) == 1 && dRow == 1 && endPiece == null &&
-                                        historyMoves.size > 0 && historyMoves.last().first == Pair(
+                                        historyMoves.size > 0 && historyMoves.last().move == Pair(
                                     "${'A' + startCol + dCol}2",
                                     "${'A' + startCol + dCol}4"
                                 ) && (lastPiece is ChessPiece.WhiteChessPiece && lastPiece.type == ChessPiece.Type.PAWN)
@@ -556,7 +592,7 @@ class ChessGame(
                         ))) && endPiece == null) ||
                                 (abs(dCol) == 1 && dRow == -1 && endPiece != null) ||
                                 (startRow == 3 && abs(dCol) == 1 && dRow == -1 && endPiece == null &&
-                                        historyMoves.size > 0 && historyMoves.last().first == Pair(
+                                        historyMoves.size > 0 && historyMoves.last().move == Pair(
                                     "${'A' + startCol + dCol}7",
                                     "${'A' + startCol + dCol}5"
                                 ) && (lastPiece is ChessPiece.BlackChessPiece && lastPiece.type == ChessPiece.Type.PAWN)
