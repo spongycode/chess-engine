@@ -26,6 +26,8 @@ class ChessGame(
         return chessBoard
     }
 
+    fun getCurrentPlayer(): Color = currentPlayer
+
     fun makeMove(start: String, end: String) {
         val canMove = validate(start, end)
         if (canMove) {
@@ -88,7 +90,9 @@ class ChessGame(
         return game.toString()
     }
 
-    fun undo() {
+    fun undo(
+        resetWinner: Boolean = false
+    ) {
         if (historyMoves.isNotEmpty()) {
             val (start, end) = historyMoves.last().move
             val (startPositionRow, startPositionCol) = start.transformToPair()
@@ -209,7 +213,9 @@ class ChessGame(
             }
             historyMoves.removeLast()
             currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
-            winner = null
+            if (resetWinner) {
+                winner = null
+            }
         }
     }
 

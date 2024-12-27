@@ -152,7 +152,7 @@ class ChessGameTest {
 
             var backIndex = frontIndex
             while (backIndex > 0) {
-                chessGame.undo()
+                chessGame.undo(resetWinner = true)
                 backIndex--
                 val undoGame = chessGame.getBoardAsString()
                 assertEquals(
