@@ -50,7 +50,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":chess-core"))
+    implementation(project(":chess-engine"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

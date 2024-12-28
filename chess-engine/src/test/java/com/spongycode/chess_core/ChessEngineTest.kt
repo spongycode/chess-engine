@@ -8,7 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(JUnit4::class)
-class ChessGameTest {
+class ChessEngineTest {
 
     private lateinit var chessBoard: ChessBoard
     private lateinit var board: MutableList<MutableList<Cell>>

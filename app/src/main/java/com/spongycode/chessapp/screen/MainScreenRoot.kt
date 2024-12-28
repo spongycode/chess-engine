@@ -168,8 +168,8 @@ fun MainScreen(
                 fontWeight = FontWeight.W800,
                 text = when (uiState.winner) {
                     WHITE -> "White won"
-                    DRAW -> "Black won"
-                    else -> "Stalemate - Draw"
+                    DRAW -> "Stalemate - Draw"
+                    else -> "Black won"
                 }
             )
         }

@@ -21,4 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "Chess App"
 include(":app")
-include(":chess-core")
+include(":chess-engine")
