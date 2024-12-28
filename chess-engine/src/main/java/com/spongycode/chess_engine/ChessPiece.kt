@@ -1,5 +1,4 @@
-package com.spongycode.chess_core
-
+package com.spongycode.chess_engine
 
 sealed class ChessPiece {
     abstract val type: Type

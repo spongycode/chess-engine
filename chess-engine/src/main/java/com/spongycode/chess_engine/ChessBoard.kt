@@ -1,6 +1,6 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
-import com.spongycode.chess_core.Constants.BOARD_SIZE
+import com.spongycode.chess_engine.Constants.BOARD_SIZE
 
 class ChessBoard {
     private val board: MutableList<MutableList<Cell>> = MutableList(BOARD_SIZE) { MutableList(BOARD_SIZE) { Cell() } }

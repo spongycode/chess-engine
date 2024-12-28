@@ -1,8 +1,8 @@
-package com.spongycode.chess_core.sample_games
+package com.spongycode.chess_engine.sample_games
 
-import com.spongycode.chess_core.Color
+import com.spongycode.chess_engine.Player
 
-val blackMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
+val blackMoves1: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("g7", "g5"),
@@ -92,10 +92,10 @@ val blackMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("g3", "g1"),
         Pair("d3", "e1"),
         Pair("g1", "e1"),
-    ), Color.BLACK
+    ), Player.BLACK
 )
 
-val blackMoves2: Pair<List<Pair<String, String>>, Color?> = Pair(
+val blackMoves2: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("e7", "e5"),
@@ -143,10 +143,10 @@ val blackMoves2: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("e3", "e1"),
         Pair("h2", "h4"),
         Pair("e1", "h4"),
-    ), Color.BLACK
+    ), Player.BLACK
 )
 
-val blackMoves3: Pair<List<Pair<String, String>>, Color?> = Pair(
+val blackMoves3: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("g7", "g6"),
@@ -190,10 +190,10 @@ val blackMoves3: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("f7", "f5"),
         Pair("e4", "d4"),
         Pair("c6", "g2"),
-    ), Color.BLACK
+    ), Player.BLACK
 )
 
-val blackMoves4: Pair<List<Pair<String, String>>, Color?> = Pair(
+val blackMoves4: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("c7", "c6"),
@@ -269,10 +269,10 @@ val blackMoves4: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("f8", "f2"),
         Pair("h6", "h7"),
         Pair("a2", "a1"),
-    ), Color.BLACK
+    ), Player.BLACK
 )
 
-val blackMoves5: Pair<List<Pair<String, String>>, Color?> = Pair(
+val blackMoves5: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("d7", "d5"),
@@ -472,5 +472,5 @@ val blackMoves5: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("f4", "f5"),
         Pair("h5", "h6"),
         Pair("g1", "g6"),
-    ), Color.BLACK
+    ), Player.BLACK
 )

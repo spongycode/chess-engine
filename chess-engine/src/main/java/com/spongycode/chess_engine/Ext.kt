@@ -1,4 +1,4 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
 
 /**
@@ -19,10 +19,10 @@ fun String.offset(rowDiff: Int, colDiff: Int): String {
     return "$col$row"
 }
 
-fun ChessPiece.getColor(): Color {
+fun ChessPiece.getColor(): Player {
     return when (this) {
-        is ChessPiece.BlackChessPiece -> Color.BLACK
-        is ChessPiece.WhiteChessPiece -> Color.WHITE
+        is ChessPiece.BlackChessPiece -> Player.BLACK
+        is ChessPiece.WhiteChessPiece -> Player.WHITE
     }
 }
 

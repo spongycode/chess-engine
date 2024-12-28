@@ -1,8 +1,8 @@
-package com.spongycode.chess_core.sample_games
+package com.spongycode.chess_engine.sample_games
 
-import com.spongycode.chess_core.Color
+import com.spongycode.chess_engine.Player
 
-val whiteMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
+val whiteMoves1: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("d7", "d5"),
@@ -61,10 +61,10 @@ val whiteMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("f1", "f8"),
         Pair("d7", "e8"),
         Pair("g6", "e8"),
-    ), Color.WHITE
+    ), Player.WHITE
 )
 
-val whiteMoves2: Pair<List<Pair<String, String>>, Color?> = Pair(
+val whiteMoves2: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("c7", "c5"),
@@ -147,10 +147,10 @@ val whiteMoves2: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("f8", "f6"),
         Pair("h6", "h5"),
         Pair("f6", "g5"),
-    ), Color.WHITE
+    ), Player.WHITE
 )
 
-val whiteMoves3: Pair<List<Pair<String, String>>, Color?> = Pair(
+val whiteMoves3: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("d7", "d5"),
@@ -343,5 +343,5 @@ val whiteMoves3: Pair<List<Pair<String, String>>, Color?> = Pair(
         Pair("e6", "f6"),
         Pair("h4", "h3"),
         Pair("f7", "g7"),
-    ), Color.WHITE
+    ), Player.WHITE
 )

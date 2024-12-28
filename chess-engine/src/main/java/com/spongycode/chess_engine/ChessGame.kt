@@ -1,10 +1,10 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
-import com.spongycode.chess_core.Constants.BOARD_SIZE
-import com.spongycode.chess_core.Constants.CACHE_SIZE
-import com.spongycode.chess_core.Constants.KING_MOVES
-import com.spongycode.chess_core.Constants.KNIGHT_MOVES
-import com.spongycode.chess_core.Constants.PAWN_MOVES
+import com.spongycode.chess_engine.Constants.BOARD_SIZE
+import com.spongycode.chess_engine.Constants.CACHE_SIZE
+import com.spongycode.chess_engine.Constants.KING_MOVES
+import com.spongycode.chess_engine.Constants.KNIGHT_MOVES
+import com.spongycode.chess_engine.Constants.PAWN_MOVES
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
@@ -14,14 +14,14 @@ class ChessGame(
     var chessBoard: MutableList<MutableList<Cell>>
 ) {
     private val historyMoves: MutableList<HistoryMove> = mutableListOf()
-    private var currentPlayer: Color = Color.WHITE
+    private var currentPlayer: Player = Player.WHITE
     private var blackKingPosition: String = "E8"
     private var whiteKingPosition: String = "E1"
     private var whiteKingMoveCount: Int = 0
     private var blackKingMoveCount: Int = 0
     private var whiteRooksMoved: Pair<Int, Int> = Pair(0, 0)
     private var blackRooksMoved: Pair<Int, Int> = Pair(0, 0)
-    private var winner: Color? = null
+    private var winner: Player? = null
     private val chessCache = ChessLRUCache(CACHE_SIZE)
     private var moveCounter: Int = 0
 
@@ -29,7 +29,7 @@ class ChessGame(
         return chessBoard
     }
 
-    fun getCurrentPlayer(): Color = currentPlayer
+    fun getCurrentPlayer(): Player = currentPlayer
 
     fun makeMove(start: String, end: String) {
         val canMove = validate(start, end)
@@ -229,7 +229,7 @@ class ChessGame(
                 whiteKingPosition = start
             }
             historyMoves.removeLast()
-            currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+            currentPlayer = if (currentPlayer == Player.WHITE) Player.BLACK else Player.WHITE
             if (resetWinner) {
                 moveCounter--
                 winner = null
@@ -239,7 +239,7 @@ class ChessGame(
 
     fun reset(board: MutableList<MutableList<Cell>>) {
         chessBoard = board
-        currentPlayer = Color.WHITE
+        currentPlayer = Player.WHITE
         historyMoves.clear()
         blackKingPosition = "E8"
         whiteKingPosition = "E1"
@@ -251,7 +251,7 @@ class ChessGame(
         chessCache.clear()
     }
 
-    fun getWinner(): Color? {
+    fun getWinner(): Player? {
         return winner
     }
 
@@ -261,7 +261,7 @@ class ChessGame(
             val end = start.offset(move.first, move.second)
             if (validate(start, end)) {
                 makeMoveAfterValidation(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                     moves.add(end.lowercase(Locale.getDefault()))
                 }
                 undo()
@@ -295,7 +295,7 @@ class ChessGame(
             for (move in movesList) {
                 if (validate(start, move)) {
                     makeMoveAfterValidation(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                         moves.add(move.lowercase(Locale.getDefault()))
                     }
                     undo()
@@ -318,7 +318,7 @@ class ChessGame(
             for (move in movesList) {
                 if (validate(start, move)) {
                     makeMoveAfterValidation(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                         moves.add(move.lowercase(Locale.getDefault()))
                     }
                     undo()
@@ -341,7 +341,7 @@ class ChessGame(
             for (move in movesList) {
                 if (validate(start, move)) {
                     makeMoveAfterValidation(start, move)
-                    if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                    if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                         moves.add(move.lowercase(Locale.getDefault()))
                     }
                     undo()
@@ -358,7 +358,7 @@ class ChessGame(
             val end = start.offset(move.first, move.second)
             if (validate(start, end)) {
                 makeMoveAfterValidation(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                     moves.add(end.lowercase(Locale.getDefault()))
                 }
                 undo()
@@ -373,12 +373,12 @@ class ChessGame(
         val piece = chessBoard[startRow][startCol].piece ?: return moves
         for (move in PAWN_MOVES) {
             val end = start.offset(
-                if (piece.getColor() == Color.WHITE) move.first else -move.first,
+                if (piece.getColor() == Player.WHITE) move.first else -move.first,
                 move.second
             )
             if (validate(start, end, false)) {
                 makeMoveAfterValidation(start, end)
-                if (!isCellUnderAttack(if (currentPlayer == Color.WHITE) blackKingPosition else whiteKingPosition)) {
+                if (!isCellUnderAttack(if (currentPlayer == Player.WHITE) blackKingPosition else whiteKingPosition)) {
                     val (endRow, _) = end.transformToPair()
                     // pawn promotion case
                     if (endRow == 0 || endRow == BOARD_SIZE - 1) {
@@ -464,7 +464,7 @@ class ChessGame(
                 addPiece(end, pawnPromotedPiece)
             }
         }
-        currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+        currentPlayer = if (currentPlayer == Player.WHITE) Player.BLACK else Player.WHITE
         historyMoves.add(
             HistoryMove(
                 move = Pair(
@@ -545,17 +545,17 @@ class ChessGame(
                                     blackKingPosition.offset(
                                         0,
                                         if (dCol > 0) 1 else -1
-                                    ), attackingPlayer = Color.WHITE
+                                    ), attackingPlayer = Player.WHITE
                                 ) &&
                                 !isCellUnderAttack(
                                     blackKingPosition.offset(
                                         0,
                                         if (dCol > 0) 2 else -2
-                                    ), attackingPlayer = Color.WHITE
+                                    ), attackingPlayer = Player.WHITE
                                 ) &&
                                 !isCellUnderAttack(
                                     blackKingPosition,
-                                    attackingPlayer = Color.WHITE
+                                    attackingPlayer = Player.WHITE
                                 ))
                     }
 
@@ -567,17 +567,17 @@ class ChessGame(
                                     whiteKingPosition.offset(
                                         0,
                                         if (dCol > 0) 1 else -1
-                                    ), attackingPlayer = Color.BLACK
+                                    ), attackingPlayer = Player.BLACK
                                 ) &&
                                 !isCellUnderAttack(
                                     whiteKingPosition.offset(
                                         0,
                                         if (dCol > 0) 2 else -2
-                                    ), attackingPlayer = Color.BLACK
+                                    ), attackingPlayer = Player.BLACK
                                 ) &&
                                 !isCellUnderAttack(
                                     whiteKingPosition,
-                                    attackingPlayer = Color.BLACK
+                                    attackingPlayer = Player.BLACK
                                 ))
                     }
                 }
@@ -670,7 +670,7 @@ class ChessGame(
         return false
     }
 
-    private fun isCellUnderAttack(position: String, attackingPlayer: Color? = null): Boolean {
+    private fun isCellUnderAttack(position: String, attackingPlayer: Player? = null): Boolean {
         val (row, col) = position.transformToPair()
         val opponentPlayer = attackingPlayer ?: currentPlayer
 
@@ -681,11 +681,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyRow - row) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyRow - row) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -704,11 +704,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyRow - row) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyRow - row) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -727,11 +727,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -750,11 +750,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.ROOK) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -773,12 +773,12 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.PAWN))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -798,12 +798,12 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.PAWN))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING)))
@@ -823,11 +823,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING) ||
@@ -848,11 +848,11 @@ class ChessGame(
             val piece = chessBoard[dummyRow][dummyCol].piece
             if (piece != null) {
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             ((piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KING))) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             ((piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.QUEEN) ||
                                     (piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.BISHOP) ||
                                     (abs(dummyCol - col) == 1 && piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KING) ||
@@ -876,9 +876,9 @@ class ChessGame(
             if (knightAttackRow in 0 until BOARD_SIZE && knightAttackCol in 0 until BOARD_SIZE) {
                 val piece = chessBoard[knightAttackRow][knightAttackCol].piece
                 if (
-                    (opponentPlayer == Color.BLACK &&
+                    (opponentPlayer == Player.BLACK &&
                             piece is ChessPiece.BlackChessPiece && piece.type == ChessPiece.Type.KNIGHT) ||
-                    (opponentPlayer == Color.WHITE &&
+                    (opponentPlayer == Player.WHITE &&
                             piece is ChessPiece.WhiteChessPiece && piece.type == ChessPiece.Type.KNIGHT)
                 ) {
                     return true
@@ -904,13 +904,13 @@ class ChessGame(
         }
         winner =
             if (isCellUnderAttack(
-                    if (currentPlayer == Color.WHITE) whiteKingPosition else blackKingPosition,
-                    attackingPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+                    if (currentPlayer == Player.WHITE) whiteKingPosition else blackKingPosition,
+                    attackingPlayer = if (currentPlayer == Player.WHITE) Player.BLACK else Player.WHITE
                 )
             ) {
-                if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
+                if (currentPlayer == Player.WHITE) Player.BLACK else Player.WHITE
             } else {
-                Color.DRAW
+                Player.BOTH
             }
     }
 }

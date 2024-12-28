@@ -1,10 +1,10 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
 class ChessEngine : ChessFunctions {
     private val chessBoard = ChessBoard()
     private val board = chessBoard.getBoard()
     private val chessGame = ChessGame(chessBoard = board)
-    override fun getCurrentPlayer(): Color = chessGame.getCurrentPlayer()
+    override fun getCurrentPlayer(): Player = chessGame.getCurrentPlayer()
     override fun makeMove(start: String, end: String) = chessGame.makeMove(start, end)
     override fun getBoard(): MutableList<MutableList<Cell>> = chessGame.getBoard()
     override fun getMoves(start: String): List<String> = chessGame.getMoves(start)
@@ -15,5 +15,5 @@ class ChessEngine : ChessFunctions {
         chessGame.reset(newBoard)
     }
 
-    override fun getWinner(): Color? = chessGame.getWinner()
+    override fun getWinner(): Player? = chessGame.getWinner()
 }

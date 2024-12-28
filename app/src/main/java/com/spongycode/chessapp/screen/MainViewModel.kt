@@ -2,9 +2,9 @@ package com.spongycode.chessapp.screen
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.spongycode.chess_core.ChessEngine
-import com.spongycode.chess_core.Color
-import com.spongycode.chess_core.toShortFormat
+import com.spongycode.chess_engine.ChessEngine
+import com.spongycode.chess_engine.Player
+import com.spongycode.chess_engine.toShortFormat
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -120,8 +120,8 @@ class MainViewModel : ViewModel() {
 data class GameUiState(
     val boardState: Map<String, CellState> = mapOf(),
     val selectedPosition: String? = null,
-    val winner: Color? = null,
-    val currentPlayer: Color = Color.WHITE
+    val winner: Player? = null,
+    val currentPlayer: Player = Player.WHITE
 )
 
 data class CellState(

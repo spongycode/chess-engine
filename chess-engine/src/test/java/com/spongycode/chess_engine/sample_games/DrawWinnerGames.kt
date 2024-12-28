@@ -1,8 +1,8 @@
-package com.spongycode.chess_core.sample_games
+package com.spongycode.chess_engine.sample_games
 
-import com.spongycode.chess_core.Color
+import com.spongycode.chess_engine.Player
 
-val drawMoves1: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves1: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("e7", "e5"),
@@ -92,10 +92,10 @@ val drawMoves1: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("d4", "c3"),
         Pair("b3", "g8"),
         Pair("h8", "g8"),
-    ), Color.DRAW
+    ), Player.BOTH
 )
 
-val drawMoves2: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves2: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("e7", "e5"),
@@ -184,10 +184,10 @@ val drawMoves2: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("h1", "h2"),
         Pair("e1", "h1"),
         Pair("h2", "h1")
-    ), Color.DRAW
+    ), Player.BOTH
 )
 
-val drawMoves3: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves3: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("g8", "f6"),
@@ -338,10 +338,10 @@ val drawMoves3: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("h4", "g3"),
         Pair("e3", "d4"),
         Pair("g3", "f3"),
-    ), Color.DRAW
+    ), Player.BOTH
 )
 
-val drawMoves4: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves4: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("g8", "f6"),
@@ -450,10 +450,10 @@ val drawMoves4: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("g5", "h6"),
         Pair("g4", "g5"),
         Pair("h6", "g5"),
-    ), Color.DRAW
+    ), Player.BOTH
 )
 
-val drawMoves5: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves5: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("g8", "f6"),
@@ -590,10 +590,10 @@ val drawMoves5: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("g5", "g6"),
         Pair("d8", "d3"),
         Pair("c3", "d3"),
-    ), Color.DRAW
+    ), Player.BOTH
 )
 
-val drawMoves6: Pair<List<Pair<String, String>>, Color> = Pair(
+val drawMoves6: Pair<List<Pair<String, String>>, Player> = Pair(
     listOf(
         Pair("d2", "d4"),
         Pair("d7", "d5"),
@@ -799,5 +799,5 @@ val drawMoves6: Pair<List<Pair<String, String>>, Color> = Pair(
         Pair("b4", "c3"),
         Pair("c2", "b1"),
         Pair("c4", "b3"),
-    ), Color.DRAW
+    ), Player.BOTH
 )

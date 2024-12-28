@@ -1,4 +1,4 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
 fun main() {
     val chessBoard = ChessBoard()

@@ -43,7 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.spongycode.chess_core.Color.*
+import com.spongycode.chess_engine.Player.*
 import com.spongycode.chessapp.util.getResource
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
@@ -168,7 +168,7 @@ fun MainScreen(
                 fontWeight = FontWeight.W800,
                 text = when (uiState.winner) {
                     WHITE -> "White won"
-                    DRAW -> "Stalemate - Draw"
+                    BOTH -> "Stalemate - Draw"
                     else -> "Black won"
                 }
             )
@@ -270,7 +270,7 @@ fun ChessCell(
 
 @Composable
 fun PawnPromotionDialog(
-    currentPlayer: com.spongycode.chess_core.Color,
+    currentPlayer: com.spongycode.chess_engine.Player,
     onConfirm: (Char) -> Unit = {},
     onDismiss: () -> Unit = {}
 ) {

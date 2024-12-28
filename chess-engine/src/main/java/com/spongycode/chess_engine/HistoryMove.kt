@@ -1,4 +1,4 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
 data class HistoryMove(
     val move: Pair<String, String>,

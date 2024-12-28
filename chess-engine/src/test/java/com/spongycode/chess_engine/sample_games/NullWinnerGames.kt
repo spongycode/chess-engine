@@ -1,9 +1,9 @@
-package com.spongycode.chess_core.sample_games
+package com.spongycode.chess_engine.sample_games
 
-import com.spongycode.chess_core.Color
+import com.spongycode.chess_engine.Player
 
 
-val nullMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
+val nullMoves1: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("c7", "c5"),
@@ -81,7 +81,7 @@ val nullMoves1: Pair<List<Pair<String, String>>, Color?> = Pair(
     ), null
 )
 
-val nullMoves2: Pair<List<Pair<String, String>>, Color?> = Pair(
+val nullMoves2: Pair<List<Pair<String, String>>, Player?> = Pair(
     listOf(
         Pair("e2", "e4"),
         Pair("c7", "c5"),

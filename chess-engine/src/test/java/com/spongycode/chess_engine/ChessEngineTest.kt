@@ -1,6 +1,6 @@
-package com.spongycode.chess_core
+package com.spongycode.chess_engine
 
-import com.spongycode.chess_core.sample_games.*
+import com.spongycode.chess_engine.sample_games.*
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -33,11 +33,11 @@ class ChessEngineTest {
         )
 
         for (game in drawGames) {
-            validateGame(game, expectedResult = Color.DRAW)
+            validateGame(game, expectedResult = Player.BOTH)
         }
 
         for (game in drawGames) {
-            validateUndoMovements(game, expectedResult = Color.DRAW)
+            validateUndoMovements(game, expectedResult = Player.BOTH)
         }
     }
 
@@ -66,11 +66,11 @@ class ChessEngineTest {
         )
 
         for (game in whiteWinGames) {
-            validateGame(game, expectedResult = Color.WHITE)
+            validateGame(game, expectedResult = Player.WHITE)
         }
 
         for (game in whiteWinGames) {
-            validateUndoMovements(game, expectedResult = Color.WHITE)
+            validateUndoMovements(game, expectedResult = Player.WHITE)
         }
     }
 
@@ -85,17 +85,17 @@ class ChessEngineTest {
         )
 
         for (game in blackWinGames) {
-            validateGame(game, expectedResult = Color.BLACK)
+            validateGame(game, expectedResult = Player.BLACK)
         }
 
         for (game in blackWinGames) {
-            validateUndoMovements(game, expectedResult = Color.BLACK)
+            validateUndoMovements(game, expectedResult = Player.BLACK)
         }
     }
 
     private fun validateGame(
-        game: Pair<List<Pair<String, String>>, Color?>,
-        expectedResult: Color?
+        game: Pair<List<Pair<String, String>>, Player?>,
+        expectedResult: Player?
     ) {
         setup()
 
@@ -126,8 +126,8 @@ class ChessEngineTest {
     }
 
     private fun validateUndoMovements(
-        game: Pair<List<Pair<String, String>>, Color?>,
-        expectedResult: Color?
+        game: Pair<List<Pair<String, String>>, Player?>,
+        expectedResult: Player?
     ) {
         setup()
 
