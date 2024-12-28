@@ -4,3 +4,13 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
 }
+
+afterEvaluate {
+    project.extensions.findByType(PublishingExtension::class.java)?.apply {
+        publications {
+            create<MavenPublication>("release") {
+                from(components["java"])
+            }
+        }
+    }
+}
