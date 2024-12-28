@@ -9,7 +9,10 @@ afterEvaluate {
     project.extensions.findByType(PublishingExtension::class.java)?.apply {
         publications {
             create<MavenPublication>("release") {
-                from(components["java"])
+                from(components["release"])
+                groupId = "com.github.spongycode"
+                artifactId = "chess-engine"
+                version = "1.0"
             }
         }
     }
