@@ -1,6 +1,7 @@
 package com.spongycode.chess_core
 
 import com.spongycode.chess_core.Constants.BOARD_SIZE
+import com.spongycode.chess_core.Constants.CACHE_SIZE
 import com.spongycode.chess_core.Constants.KING_MOVES
 import com.spongycode.chess_core.Constants.KNIGHT_MOVES
 import com.spongycode.chess_core.Constants.PAWN_MOVES
@@ -21,6 +22,8 @@ class ChessGame(
     private var whiteRooksMoved: Pair<Int, Int> = Pair(0, 0)
     private var blackRooksMoved: Pair<Int, Int> = Pair(0, 0)
     private var winner: Color? = null
+    private val chessCache = ChessLRUCache(CACHE_SIZE)
+    private var moveCounter: Int = 0
 
     fun getBoard(): MutableList<MutableList<Cell>> {
         return chessBoard
@@ -32,6 +35,7 @@ class ChessGame(
         val canMove = validate(start, end)
         if (canMove) {
             makeMoveAfterValidation(start, end) {
+                moveCounter++
                 checkForGameOverOrStalemate()
             }
         } else {
@@ -39,16 +43,29 @@ class ChessGame(
         }
     }
 
-    fun getMoves(start: String): List<String> {
+    fun getMoves(start: String, skipCache: Boolean = false): List<String> {
         val (startRow, startCol) = start.transformToPair()
         val piece = chessBoard[startRow][startCol].piece ?: return mutableListOf()
-        return when (piece.type) {
-            ChessPiece.Type.KING -> getKingMoves(start)
-            ChessPiece.Type.QUEEN -> getQueenMoves(start)
-            ChessPiece.Type.ROOK -> getRookMoves(start)
-            ChessPiece.Type.KNIGHT -> getKnightMoves(start)
-            ChessPiece.Type.BISHOP -> getBishopMoves(start)
-            ChessPiece.Type.PAWN -> getPawnMoves(start)
+        return if (skipCache) {
+            when (piece.type) {
+                ChessPiece.Type.KING -> getKingMoves(start)
+                ChessPiece.Type.QUEEN -> getQueenMoves(start)
+                ChessPiece.Type.ROOK -> getRookMoves(start)
+                ChessPiece.Type.KNIGHT -> getKnightMoves(start)
+                ChessPiece.Type.BISHOP -> getBishopMoves(start)
+                ChessPiece.Type.PAWN -> getPawnMoves(start)
+            }
+        } else {
+            chessCache.get(key = "${moveCounter}$${start}", fetchFromFunction = {
+                when (piece.type) {
+                    ChessPiece.Type.KING -> getKingMoves(start)
+                    ChessPiece.Type.QUEEN -> getQueenMoves(start)
+                    ChessPiece.Type.ROOK -> getRookMoves(start)
+                    ChessPiece.Type.KNIGHT -> getKnightMoves(start)
+                    ChessPiece.Type.BISHOP -> getBishopMoves(start)
+                    ChessPiece.Type.PAWN -> getPawnMoves(start)
+                }
+            })
         }
     }
 
@@ -214,6 +231,7 @@ class ChessGame(
             historyMoves.removeLast()
             currentPlayer = if (currentPlayer == Color.WHITE) Color.BLACK else Color.WHITE
             if (resetWinner) {
+                moveCounter--
                 winner = null
             }
         }
@@ -230,6 +248,7 @@ class ChessGame(
         blackKingMoveCount = 0
         whiteRooksMoved = Pair(0, 0)
         blackRooksMoved = Pair(0, 0)
+        chessCache.clear()
     }
 
     fun getWinner(): Color? {
@@ -875,7 +894,7 @@ class ChessGame(
                 val position = "${col}${row}"
                 val (r, c) = position.transformToPair()
                 if (chessBoard[r][c].piece?.getColor() == currentPlayer) {
-                    val moves = getMoves(position)
+                    val moves = getMoves(position, skipCache = true)
                     if (moves.isNotEmpty()) {
                         winner = null
                         return

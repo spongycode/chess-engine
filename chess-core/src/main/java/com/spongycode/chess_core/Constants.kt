@@ -2,6 +2,7 @@ package com.spongycode.chess_core
 
 object Constants {
     const val BOARD_SIZE = 8
+    const val CACHE_SIZE = 8
     val KNIGHT_MOVES = setOf(
         Pair(1, 2), Pair(1, -2),
         Pair(-1, 2), Pair(-1, -2),
