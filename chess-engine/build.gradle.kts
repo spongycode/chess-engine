@@ -15,3 +15,14 @@ java {
 dependencies {
     testImplementation(libs.junit)
 }
+
+publishing {
+    publications {
+        create<MavenPublication>("release") {
+            groupId = "com.github.spongycode"
+            artifactId = "chess-engine"
+            version = "1.0.0"
+            from(components["java"])
+        }
+    }
+}

@@ -4,16 +4,3 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
 }
-
-afterEvaluate {
-    project.extensions.findByType(PublishingExtension::class.java)?.apply {
-        publications {
-            create<MavenPublication>("release") {
-                from(components["release"])
-                groupId = "com.github.spongycode"
-                artifactId = "chess-engine"
-                version = "1.0"
-            }
-        }
-    }
-}
