@@ -1,9 +1,11 @@
 package com.spongycode.chessapp.util
 
+import com.spongycode.chess_engine.Player
 import com.spongycode.chessapp.R
+import com.spongycode.chessapp.model.PlayerColor
 
 fun String.getResource(): Int {
-    return when(this) {
+    return when (this) {
         "BK" -> R.drawable.bk_1
         "BQ" -> R.drawable.bq_1
         "BR" -> R.drawable.br_1
@@ -17,5 +19,13 @@ fun String.getResource(): Int {
         "WN" -> R.drawable.wn_1
         "WP" -> R.drawable.wp_1
         else -> R.drawable.transparent
+    }
+}
+
+fun Player.toPlayerColor(): PlayerColor {
+    return when (this) {
+        Player.WHITE -> PlayerColor.WHITE
+        Player.BLACK -> PlayerColor.BLACK
+        Player.BOTH -> PlayerColor.BOTH
     }
 }
