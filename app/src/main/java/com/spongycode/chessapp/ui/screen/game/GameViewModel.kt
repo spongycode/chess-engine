@@ -73,8 +73,9 @@ class GameViewModel @Inject constructor(
                     _gameState.value = _gameState.value.copy(
                         boardState = updatedBoardState,
                         selectedPosition = null,
-                        winner = chessEngine.getWinner()
+                        winner = chessEngine.getWinner()?.toPlayerColor()
                     )
+                    emitWinner()
                     return
                 }
 
@@ -95,8 +96,9 @@ class GameViewModel @Inject constructor(
                 _gameState.value = _gameState.value.copy(
                     boardState = updatedBoardState,
                     selectedPosition = event.position,
-                    winner = chessEngine.getWinner()
+                    winner = chessEngine.getWinner()?.toPlayerColor()
                 )
+                emitWinner()
             }
 
             GameEvent.Undo -> {
@@ -128,6 +130,14 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    private fun emitWinner() {
+        if (_gameState.value.winner != null) {
+            viewModelScope.launch {
+                _viewEffect.emit(GameViewEffect.OnGameEnd)
+            }
+        }
+    }
+
     private fun refreshBoard() {
         val board = chessEngine.getBoard()
         val initialBoardState = mutableMapOf<String, CellState>()
@@ -152,9 +162,10 @@ class GameViewModel @Inject constructor(
             myColor = myColor,
             boardState = initialBoardState,
             selectedPosition = null,
-            winner = chessEngine.getWinner(),
+            winner = chessEngine.getWinner()?.toPlayerColor(),
             currentPlayer = chessEngine.getCurrentPlayer()
         )
+        emitWinner()
     }
 
     private fun makeMoveToDatabase(gameId: String, move: Move) {
@@ -230,11 +241,7 @@ class GameViewModel @Inject constructor(
 
 enum class GameStatus {
     WAITING_FOR_OPPONENT,
-    ONGOING,
-    WHITE_WON,
-    BLACK_WON,
-    STALEMATE,
-    DRAW
+    ONGOING
 }
 
 data class GameUiState(
@@ -243,7 +250,7 @@ data class GameUiState(
     val boardState: Map<String, CellState> = mapOf(),
     val gameStatus: String = GameStatus.WAITING_FOR_OPPONENT.name,
     val selectedPosition: String? = null,
-    val winner: Player? = null,
+    val winner: PlayerColor? = null,
     val currentPlayer: Player = Player.WHITE
 )
 
@@ -265,4 +272,5 @@ sealed interface GameEvent {
 sealed interface GameViewEffect {
     data class OnPawnPromotion(val position: String) : GameViewEffect
     data object OnReset : GameViewEffect
+    data object OnGameEnd : GameViewEffect
 }

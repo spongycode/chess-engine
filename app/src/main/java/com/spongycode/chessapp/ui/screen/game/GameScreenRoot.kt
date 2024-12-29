@@ -21,6 +21,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -73,6 +75,7 @@ fun GameScreenRoot(
     var showPawnPromotionDialog by remember { mutableStateOf(false) }
     var pawnPromotionPosition by remember { mutableStateOf("") }
     var showGameWelcomeDialog by remember { mutableStateOf(true) }
+    var showGameEndDialog by remember { mutableStateOf(false) }
 
     GameScreen(
         modifier = modifier,
@@ -91,6 +94,10 @@ fun GameScreenRoot(
 
                 GameViewEffect.OnReset -> {
                     showResetDialog = true
+                }
+
+                GameViewEffect.OnGameEnd -> {
+                    showGameEndDialog = true
                 }
             }
         }
@@ -123,6 +130,16 @@ fun GameScreenRoot(
             gameId = gameId,
             onConfirm = {
                 showGameWelcomeDialog = false
+            }
+        )
+    }
+
+    if (showGameEndDialog) {
+        GameEndDialog(
+            winner = uiState.winner,
+            playerColor = uiState.myColor,
+            onConfirm = {
+                showGameEndDialog = false
             }
         )
     }
@@ -210,35 +227,49 @@ fun GameScreen(
             }
         }
         if (uiState.gameStatus == GameStatus.WAITING_FOR_OPPONENT.name) {
-            Text(
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color(0xFFC9C7C7))
-                    .padding(15.dp),
-                text = "Waiting for opponent to join..",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            GameInfo(bgColor = Color(0xFFC9C7C7), text = "Waiting for opponent to join..")
         }
-        uiState.winner?.let {
-            Text(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(if (uiState.winner == WHITE) Color.Black else Color.White)
-                    .padding(vertical = 5.dp, horizontal = 15.dp),
-                fontSize = 25.sp,
-                color = if (uiState.winner == WHITE) Color.White else Color.Black,
-                fontWeight = FontWeight.W800,
+        if (uiState.winner != null) {
+            GameInfo(
+                bgColor = Color(
+                    if (uiState.winner == PlayerColor.BOTH) 0xFF383838
+                    else if (uiState.winner == uiState.myColor) 0xFF3F8526
+                    else if (uiState.myColor == PlayerColor.BOTH) 0xFF383838
+                    else 0xFFD9284A
+                ),
                 text = when (uiState.winner) {
-                    WHITE -> "White won"
-                    BOTH -> "Stalemate - Draw"
-                    else -> "Black won"
+                    PlayerColor.BOTH -> "Draw"
+                    uiState.myColor -> "You Won!"
+                    PlayerColor.WHITE -> "White Won!"
+                    else -> "Black Won!"
                 }
             )
+        } else {
+            if (uiState.myColor == PlayerColor.BOTH) {
+                GameInfo(bgColor = Color(0xFF949393), text = "Spectating...")
+            }
+        }
+        if (uiState.winner != null) {
+            GameInfo(bgColor = Color(0xFF949393), text = "Game Ended")
         }
     }
+}
+
+@Composable
+fun GameInfo(
+    bgColor: Color, text: String = "Game Info"
+) {
+    Text(
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .padding(15.dp),
+        text = text,
+        fontSize = 18.sp,
+        fontWeight = FontWeight.Bold,
+        color = Color.White
+    )
 }
 
 @Composable
@@ -524,6 +555,72 @@ fun GameWelcomeDialog(
 }
 
 @Composable
+fun GameEndDialog(
+    winner: PlayerColor? = PlayerColor.BOTH,
+    playerColor: PlayerColor? = PlayerColor.BOTH,
+    onConfirm: () -> Unit = {}
+) {
+    val winnerText = if (winner == playerColor) {
+        "You Won!"
+    } else {
+        if (winner == PlayerColor.WHITE) "White Won!" else "Black Won!"
+    }
+
+    Dialog(onDismissRequest = onConfirm) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(start = 15.dp, end = 15.dp, bottom = 50.dp, top = 10.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable {
+                            onConfirm()
+                        }
+                        .padding(5.dp)
+                        .size(25.dp)
+                        .align(Alignment.End),
+                    contentDescription = "Close",
+                    tint = Color.Black
+                )
+
+                Text(
+                    modifier = Modifier.fillMaxWidth(0.9f),
+                    textAlign = TextAlign.Center,
+                    text = winnerText,
+                    fontWeight = FontWeight.W800,
+                    fontSize = 30.sp,
+                    color = Color(
+                        if (winner == playerColor) 0xFF34A90A
+                        else if (playerColor != PlayerColor.BOTH) 0xFFD9284A
+                        else 0xFF000000
+                    )
+                )
+                Spacer(modifier = Modifier.height(30.dp))
+
+                ChessCell(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(
+                            if (winner == PlayerColor.WHITE) Color(0xFF769656) else
+                                Color(0xFFEEEED2)
+                        ),
+                    piece = if (winner == PlayerColor.WHITE) "WK" else "BK",
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun CopyToClipboardButton(
     bgColor: Color = Color.White,
     gameId: String
@@ -775,4 +872,31 @@ private fun PawnPromotionDialogPreview() {
 @Composable
 private fun GameWelcomeDialogPreview() {
     GameWelcomeDialog(gameId = "a2WI")
+}
+
+@Preview
+@Composable
+private fun GameEndDialogPreview() {
+    GameEndDialog(
+        playerColor = PlayerColor.WHITE,
+        winner = PlayerColor.WHITE
+    )
+}
+
+@Preview
+@Composable
+private fun GameEndDialogLosePreview() {
+    GameEndDialog(
+        playerColor = PlayerColor.WHITE,
+        winner = PlayerColor.BLACK
+    )
+}
+
+@Preview
+@Composable
+private fun GameEndDialogSpectatorPreview() {
+    GameEndDialog(
+        playerColor = PlayerColor.BOTH,
+        winner = PlayerColor.WHITE
+    )
 }
