@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +45,7 @@ import com.spongycode.chessapp.model.PlayerColor
 import com.spongycode.chessapp.ui.navigation.LocalNavController
 import com.spongycode.chessapp.ui.screen.game.ChessCell
 import com.spongycode.chessapp.util.Constants.GAME_SCREEN
+import com.spongycode.chessapp.util.Constants.PRACTICE_SCREEN
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
@@ -79,6 +82,10 @@ fun HomeScreenRoot(
                     showCreateGameDialog = false
                     navController.navigate("$GAME_SCREEN/${it.gameId}")
                 }
+
+                HomeViewEffect.OnPracticeGame -> {
+                    navController.navigate(PRACTICE_SCREEN)
+                }
             }
         }
     }
@@ -107,10 +114,20 @@ fun HomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.White),
-        verticalArrangement = Arrangement.Center,
+            .background(Color(0xFFFAF6F6)),
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(modifier = Modifier.fillMaxHeight(0.2f))
+        Text(
+            text = "Chess App",
+            fontSize = 30.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(50.dp))
+        RandomRowPieces()
+        Spacer(modifier = Modifier.height(100.dp))
         Button(
             onClick = {
                 onEvent(HomeEvent.CreateGame)
@@ -143,6 +160,25 @@ fun HomeScreen(
         ) {
             Text(
                 text = "Join Game",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        Spacer(modifier = Modifier.height(25.dp))
+        Button(
+            onClick = {
+                onEvent(HomeEvent.PracticeGame)
+            },
+            modifier = Modifier
+                .height(50.dp)
+                .fillMaxWidth(0.6f)
+                .padding(horizontal = 8.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9D1C1C)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Text(
+                text = "Solo Chess",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -321,6 +357,33 @@ fun CreateGameDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+fun RandomRowPieces(
+) {
+    val whitePieces = listOf("WK", "WQ", "WR", "WB", "WN", "WP")
+    val blackPieces = listOf("BK", "BQ", "BR", "BB", "BN", "BP")
+    val randomWhitePiece = whitePieces.random()
+    val randomBlackPiece = blackPieces.random()
+
+    Row {
+        ChessCell(
+            modifier = Modifier
+                .size(70.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(Color(0xFF769656)),
+            piece = randomWhitePiece
+        )
+        Spacer(modifier = Modifier.width(35.dp))
+        ChessCell(
+            modifier = Modifier
+                .size(70.dp)
+                .clip(RoundedCornerShape(5.dp))
+                .background(Color(0xFFEEEED2)),
+            piece = randomBlackPiece
+        )
     }
 }
 

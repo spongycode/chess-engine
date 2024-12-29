@@ -50,6 +50,12 @@ class HomeViewModel @Inject constructor(
                     }
                 }
             }
+
+            HomeEvent.PracticeGame -> {
+                viewModelScope.launch {
+                    _viewEffect.emit(HomeViewEffect.OnPracticeGame)
+                }
+            }
         }
     }
 
@@ -136,6 +142,7 @@ class HomeViewModel @Inject constructor(
 
 sealed interface HomeEvent {
     data object CreateGame : HomeEvent
+    data object PracticeGame : HomeEvent
     data class CreateGameConfirm(val playerColor: PlayerColor) : HomeEvent
     data class JoinGameConfirm(val gameId: String) : HomeEvent
     data object JoinGame : HomeEvent
@@ -146,4 +153,5 @@ sealed interface HomeViewEffect {
     data class OnJoinGameConfirm(val gameId: String) : HomeViewEffect
     data object OnCreateGame : HomeViewEffect
     data class OnCreateGameConfirm(val gameId: String) : HomeViewEffect
+    data object OnPracticeGame : HomeViewEffect
 }

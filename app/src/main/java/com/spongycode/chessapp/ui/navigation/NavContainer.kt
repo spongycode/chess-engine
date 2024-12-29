@@ -12,9 +12,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.spongycode.chessapp.ui.screen.game.GameScreenRoot
 import com.spongycode.chessapp.ui.screen.home.HomeScreenRoot
+import com.spongycode.chessapp.ui.screen.practice.PracticeScreenRoot
 import com.spongycode.chessapp.util.Constants.GAME_ID
 import com.spongycode.chessapp.util.Constants.GAME_SCREEN
 import com.spongycode.chessapp.util.Constants.HOME_SCREEN
+import com.spongycode.chessapp.util.Constants.PRACTICE_SCREEN
 
 val LocalNavController = compositionLocalOf<NavHostController> { error("No NavController") }
 
@@ -31,12 +33,8 @@ fun NavContainer(startDestination: String) {
                 },
                 popEnterTransition = {
                     EnterTransition.None
-                },
-                exitTransition = {
-                    slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.End, tween(300)
-                    )
-                }) {
+                }
+            ) {
                 HomeScreenRoot()
             }
             composable(route = "$GAME_SCREEN/{$GAME_ID}",
@@ -58,6 +56,22 @@ fun NavContainer(startDestination: String) {
                         gameId = gameId
                     )
                 }
+            }
+            composable(route = PRACTICE_SCREEN,
+                enterTransition = {
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start, tween(300)
+                    )
+                },
+                popEnterTransition = {
+                    EnterTransition.None
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End, tween(300)
+                    )
+                }) {
+                PracticeScreenRoot()
             }
         }
     }
