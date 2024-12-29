@@ -97,6 +97,7 @@ fun GameScreenRoot(
                 }
 
                 GameViewEffect.OnGameEnd -> {
+                    showGameWelcomeDialog = false
                     showGameEndDialog = true
                 }
             }
@@ -285,12 +286,15 @@ fun ChessBoardCompose(
                 isMine = false,
                 isMyTurn = uiState.currentPlayer.toPlayerColor() == PlayerColor.BLACK,
                 myColor = PlayerColor.BLACK,
-                viewerMode = true
+                viewerMode = true,
+                timeLeft = uiState.blackPlayerTimeLeft
             ) else {
                 PlayerTurnIndicator(
                     isMine = false,
                     isMyTurn = uiState.currentPlayer.toPlayerColor() == uiState.myColor,
-                    myColor = uiState.myColor
+                    myColor = uiState.myColor,
+                    timeLeft = if (uiState.myColor == PlayerColor.WHITE) uiState.blackPlayerTimeLeft else uiState.whitePlayerTimeLeft,
+                    viewerMode = false
                 )
             }
         }
@@ -335,12 +339,15 @@ fun ChessBoardCompose(
                 isMine = false,
                 isMyTurn = uiState.currentPlayer.toPlayerColor() == PlayerColor.WHITE,
                 myColor = PlayerColor.WHITE,
-                viewerMode = true
+                viewerMode = true,
+                timeLeft = uiState.whitePlayerTimeLeft
             ) else {
                 PlayerTurnIndicator(
                     isMine = true,
                     isMyTurn = uiState.currentPlayer.toPlayerColor() == uiState.myColor,
-                    myColor = uiState.myColor
+                    myColor = uiState.myColor,
+                    timeLeft = if (uiState.myColor == PlayerColor.WHITE) uiState.whitePlayerTimeLeft else uiState.blackPlayerTimeLeft,
+                    viewerMode = false
                 )
             }
         }
@@ -377,7 +384,7 @@ fun ChessCell(
             } else {
                 Box(
                     modifier = Modifier
-                        .size(20.dp)
+                        .fillMaxSize(0.3f)
                         .clip(CircleShape)
                         .background(Color(0x574F4E4E))
                 )
@@ -560,7 +567,9 @@ fun GameEndDialog(
     playerColor: PlayerColor? = PlayerColor.BOTH,
     onConfirm: () -> Unit = {}
 ) {
-    val winnerText = if (winner == playerColor) {
+    val winnerText = if (winner == PlayerColor.BOTH) {
+        "Draw"
+    } else if (winner == playerColor) {
         "You Won!"
     } else {
         if (winner == PlayerColor.WHITE) "White Won!" else "Black Won!"
@@ -598,23 +607,44 @@ fun GameEndDialog(
                     fontWeight = FontWeight.W800,
                     fontSize = 30.sp,
                     color = Color(
-                        if (winner == playerColor) 0xFF34A90A
+                        if (winner == PlayerColor.BOTH) 0xFF000000
+                        else if (winner == playerColor) 0xFF34A90A
                         else if (playerColor != PlayerColor.BOTH) 0xFFD9284A
                         else 0xFF000000
                     )
                 )
                 Spacer(modifier = Modifier.height(30.dp))
 
-                ChessCell(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(15.dp))
-                        .background(
-                            if (winner == PlayerColor.WHITE) Color(0xFF769656) else
-                                Color(0xFFEEEED2)
-                        ),
-                    piece = if (winner == PlayerColor.WHITE) "WK" else "BK",
-                )
+                if (winner != PlayerColor.BOTH) {
+                    ChessCell(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(
+                                if (winner == PlayerColor.WHITE) Color(0xFF769656) else
+                                    Color(0xFFEEEED2)
+                            ),
+                        piece = if (winner == PlayerColor.WHITE) "WK" else "BK",
+                    )
+                } else {
+                    Row {
+                        ChessCell(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(15.dp))
+                                .background(Color(0xFF769656)),
+                            piece = "WK",
+                        )
+                        Spacer(modifier = Modifier.width(15.dp))
+                        ChessCell(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(RoundedCornerShape(15.dp))
+                                .background(Color(0xFFEEEED2)),
+                            piece = "BK",
+                        )
+                    }
+                }
             }
         }
     }
@@ -712,6 +742,7 @@ fun ResetConfirmationDialog(
 fun PlayerTurnIndicator(
     isMine: Boolean,
     isMyTurn: Boolean,
+    timeLeft: Int = 300,
     myColor: PlayerColor?,
     viewerMode: Boolean? = false
 ) {
@@ -723,9 +754,14 @@ fun PlayerTurnIndicator(
         horizontalArrangement = if (isMine || (viewerMode == true && myColor == PlayerColor.WHITE)) Arrangement.End else Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if ((isMyTurn && isMine && viewerMode == false) ||
-            (isMyTurn && viewerMode == true && myColor == PlayerColor.WHITE)
-        ) {
+        val topDisplay = (isMyTurn && isMine && viewerMode == false) ||
+                (isMyTurn && viewerMode == true && myColor == PlayerColor.WHITE)
+        val bottomDisplay = (!isMyTurn && !isMine && viewerMode == false) ||
+                (isMyTurn && viewerMode == true && myColor == PlayerColor.BLACK)
+
+        val isTimerActive = topDisplay || bottomDisplay
+
+        if (topDisplay) {
             Text(
                 text = if (viewerMode == true) "White's turn.." else "Your move..",
                 fontSize = 18.sp,
@@ -741,6 +777,15 @@ fun PlayerTurnIndicator(
         } else {
             if (myColor == PlayerColor.WHITE) "BK" else "WK"
         }
+        val timerOnTop =
+            (viewerMode == true && myColor == PlayerColor.BLACK) ||
+                    (viewerMode == false && myColor == PlayerColor.WHITE && !isMine) ||
+                    (viewerMode == false && myColor == PlayerColor.BLACK && !isMine)
+
+        if (!timerOnTop) {
+            Timer(timeLeft, isTimerActive)
+            Spacer(modifier = Modifier.width(15.dp))
+        }
         ChessCell(
             modifier = Modifier
                 .size(50.dp)
@@ -750,10 +795,13 @@ fun PlayerTurnIndicator(
             piece = piece
         )
 
-        if ((!isMyTurn && !isMine && viewerMode == false) ||
-            (isMyTurn && viewerMode == true && myColor == PlayerColor.BLACK)
-        ) {
-            Spacer(modifier = Modifier.width(22.dp))
+        if (timerOnTop) {
+            Spacer(modifier = Modifier.width(15.dp))
+            Timer(timeLeft, isTimerActive)
+        }
+
+        if (bottomDisplay) {
+            Spacer(modifier = Modifier.width(15.dp))
             Text(
                 text = if (viewerMode == true) "Black's turn.." else "Opponent's turn..",
                 fontSize = 18.sp,
@@ -762,6 +810,44 @@ fun PlayerTurnIndicator(
             )
         }
     }
+}
+
+@Composable
+fun Timer(
+    timeLeft: Int,
+    isTimerActive: Boolean = true
+) {
+    var minutes = (timeLeft / 60).toString()
+    var seconds = (timeLeft % 60).toString()
+    if (minutes.length == 1) {
+        minutes = "0$minutes"
+    }
+    if (seconds.length == 1) {
+        seconds = "0$seconds"
+    }
+    Text(
+        modifier = Modifier
+            .clip(RoundedCornerShape(5.dp))
+            .background(
+                Color(
+                    if (isTimerActive) {
+                        if (timeLeft <= 20) 0xFFD9284A
+                        else 0xFF3F8526
+                    } else 0xFFC9C7C7
+                )
+            )
+            .padding(8.dp),
+        text = "$minutes:$seconds",
+        fontSize = 20.sp,
+        fontWeight = FontWeight.W800,
+        color = Color.White
+    )
+}
+
+@Preview
+@Composable
+private fun TimerPreview() {
+    Timer(10)
 }
 
 @Preview
@@ -781,6 +867,16 @@ private fun PlayerTurnIndicatorOpponentPreview() {
         isMine = false,
         isMyTurn = false,
         myColor = PlayerColor.BLACK
+    )
+}
+
+@Preview
+@Composable
+private fun PlayerTurnIndicatorOpponentBlackPreview() {
+    PlayerTurnIndicator(
+        isMine = false,
+        isMyTurn = false,
+        myColor = PlayerColor.WHITE
     )
 }
 
@@ -898,5 +994,14 @@ private fun GameEndDialogSpectatorPreview() {
     GameEndDialog(
         playerColor = PlayerColor.BOTH,
         winner = PlayerColor.WHITE
+    )
+}
+
+@Preview
+@Composable
+private fun GameEndDialogBothPreview() {
+    GameEndDialog(
+        playerColor = PlayerColor.BOTH,
+        winner = PlayerColor.BOTH
     )
 }

@@ -59,18 +59,14 @@ class HomeViewModel @Inject constructor(
             val snapshot = gameRef.child(gameId).get().await()
             if (snapshot.exists()) {
                 val game = snapshot.getValue(Game::class.java)
-                val updates = if (game?.player2 != null) {
-                    mapOf(
-                        "updatedAt" to System.currentTimeMillis()
-                    )
-                } else {
-                    mapOf(
+                if (game?.player2 == null) {
+                    val updates = mapOf(
                         "player2" to player2Id,
                         "status" to GameStatus.ONGOING.name,
                         "updatedAt" to System.currentTimeMillis()
                     )
+                    gameRef.child(gameId).updateChildren(updates).await()
                 }
-                gameRef.child(gameId).updateChildren(updates).await()
                 println("Game joined successfully")
                 true
             } else {
@@ -111,7 +107,9 @@ class HomeViewModel @Inject constructor(
                     status = GameStatus.WAITING_FOR_OPPONENT.name,
                     moves = listOf(),
                     createdAt = System.currentTimeMillis(),
-                    updatedAt = System.currentTimeMillis()
+                    updatedAt = System.currentTimeMillis(),
+                    whitePlayerTimeLeft = 600,
+                    blackPlayerTimeLeft = 600
                 )
 
                 gameRef.setValue(game).addOnSuccessListener {

@@ -7,7 +7,9 @@ data class Game(
     val moves: List<Move>? = listOf(),
     val status: String? = null,
     val createdAt: Long? = 0L,
-    val updatedAt: Long? = 0L
+    val updatedAt: Long? = 0L,
+    val whitePlayerTimeLeft: Int = 600,
+    val blackPlayerTimeLeft: Int = 600
 )
 
 data class Move(

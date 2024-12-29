@@ -252,7 +252,7 @@ fun CreateGameDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Create new game?",
+                    text = "Create new game",
                     fontWeight = FontWeight.W800,
                     fontSize = 22.sp,
                     color = Color.Black
@@ -264,12 +264,14 @@ fun CreateGameDialog(
                         modifier = Modifier
                             .border(
                                 if (whiteKingSelected) 4.dp
-                                else 0.dp, Color.Black
+                                else 0.dp,
+                                Color.Black,
                             )
                             .size(70.dp)
                             .background(Color(0xFF769656))
                             .clickable { whiteKingSelected = true },
-                        piece = "WK"
+                        piece = "WK",
+                        isCellSelected = whiteKingSelected
                     )
                     Spacer(modifier = Modifier.width(35.dp))
                     ChessCell(
@@ -281,7 +283,8 @@ fun CreateGameDialog(
                             .size(70.dp)
                             .background(Color(0xFFEEEED2))
                             .clickable { whiteKingSelected = false },
-                        piece = "BK"
+                        piece = "BK",
+                        isCellSelected = !whiteKingSelected
                     )
                 }
 
