@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -39,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -56,7 +58,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.spongycode.chess_engine.Player.*
+import com.spongycode.chess_engine.Player.BLACK
+import com.spongycode.chess_engine.Player.WHITE
 import com.spongycode.chessapp.R
 import com.spongycode.chessapp.model.PlayerColor
 import com.spongycode.chessapp.util.getResource
@@ -186,6 +189,12 @@ fun GameScreen(
             uiState = uiState,
             onEvent = onEvent
         )
+        GameWalkthroughControls(
+            onDoubleLeftClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.DOUBLE_LEFT)) },
+            onLeftClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.LEFT)) },
+            onRightClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.RIGHT)) },
+            onDoubleRightClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.DOUBLE_RIGHT)) }
+        )
         if (false && uiState.gameStatus == GameStatus.ONGOING.name) {
             Row(
                 modifier = Modifier
@@ -298,41 +307,55 @@ fun ChessBoardCompose(
                 )
             }
         }
-        LazyColumn {
-            for (row in if (uiState.myColor == PlayerColor.WHITE || uiState.myColor == PlayerColor.BOTH)
-                8 downTo 1 else
-                1..8) {
-                item {
-                    LazyRow {
-                        for (col in if (uiState.myColor == PlayerColor.WHITE || uiState.myColor == PlayerColor.BOTH)
-                            'A'..'H' else
-                            'H' downTo 'A') {
-                            val position = "${col}${row}".lowercase(Locale.ROOT)
-                            item {
-                                ChessCell(
-                                    modifier = Modifier
-                                        .size((screenWidthDp / 8).dp, (screenWidthDp / 8).dp)
-                                        .background(
-                                            if (((row - 1) + (col - 'A')) % 2 == 0) Color(0xFF769656) else
-                                                Color(0xFFEEEED2)
-                                        )
-                                        .clickable {
-                                            if (uiState.boardState[position]?.showPawnPromotionDialog == true) {
-                                                onEvent(GameEvent.PawnPromotion(position))
-                                            } else {
-                                                onEvent(GameEvent.CellTap(position))
-                                            }
-                                        },
-                                    piece = uiState.boardState[position]?.piece ?: "",
-                                    showDotIndicator = uiState.boardState[position]?.showDotIndicator
-                                        ?: false,
-                                    isCellSelected = uiState.selectedPosition == position
-                                )
+        Box(modifier = Modifier.clipToBounds()) {
+            LazyColumn {
+                for (row in if (uiState.myColor == PlayerColor.WHITE || uiState.myColor == PlayerColor.BOTH)
+                    8 downTo 1 else
+                    1..8) {
+                    item {
+                        LazyRow {
+                            for (col in if (uiState.myColor == PlayerColor.WHITE || uiState.myColor == PlayerColor.BOTH)
+                                'A'..'H' else
+                                'H' downTo 'A') {
+                                val position = "${col}${row}".lowercase(Locale.ROOT)
+                                item {
+                                    ChessCell(
+                                        modifier = Modifier
+                                            .size((screenWidthDp / 8).dp, (screenWidthDp / 8).dp)
+                                            .background(
+                                                if (((row - 1) + (col - 'A')) % 2 == 0) Color(
+                                                    0xFF769656
+                                                ) else
+                                                    Color(0xFFEEEED2)
+                                            )
+                                            .clickable {
+                                                if (uiState.boardState[position]?.showPawnPromotionDialog == true) {
+                                                    onEvent(GameEvent.PawnPromotion(position))
+                                                } else {
+                                                    onEvent(GameEvent.CellTap(position))
+                                                }
+                                            },
+                                        piece = if (uiState.isGameWalkthroughMode)
+                                            uiState.gameWalkthroughBoardState[position]?.piece
+                                                ?: "" else
+                                            uiState.boardState[position]?.piece ?: "",
+                                        showDotIndicator = if (uiState.isGameWalkthroughMode)
+                                            uiState.gameWalkthroughBoardState[position]?.showDotIndicator
+                                                ?: false else
+                                            uiState.boardState[position]?.showDotIndicator ?: false,
+                                        isCellSelected = uiState.selectedPosition == position
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(if (uiState.isGameWalkthroughMode) Color(0x3BFFFFFF) else Color.Transparent)
+            )
         }
         uiState.myColor?.let {
             if (it == PlayerColor.BOTH) PlayerTurnIndicator(
@@ -842,6 +865,84 @@ fun Timer(
         fontWeight = FontWeight.W800,
         color = Color.White
     )
+}
+
+@Composable
+fun GameWalkthroughControls(
+    modifier: Modifier = Modifier,
+    onDoubleLeftClick: () -> Unit = {},
+    onLeftClick: () -> Unit = {},
+    onRightClick: () -> Unit = {},
+    onDoubleRightClick: () -> Unit = {}
+) {
+    Row(
+        modifier = modifier
+            .background(Color.White)
+            .fillMaxWidth()
+            .padding(5.dp)
+            .wrapContentHeight(),
+        horizontalArrangement = Arrangement.Absolute.SpaceAround
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.keyboard_double_arrow_left),
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable {
+                    onDoubleLeftClick()
+                }
+                .background(Color(0xFF1287AB))
+                .padding(vertical = 5.dp, horizontal = 12.dp)
+                .size(30.dp),
+            contentDescription = "double left",
+            tint = Color.White
+        )
+        Icon(
+            painter = painterResource(R.drawable.keyboard_arrow_left),
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable {
+                    onLeftClick()
+                }
+                .background(Color(0xFF0F7896))
+                .padding(vertical = 5.dp, horizontal = 12.dp)
+                .size(30.dp),
+            contentDescription = "left",
+            tint = Color.White
+        )
+
+        Icon(
+            painter = painterResource(R.drawable.keyboard_arrow_right),
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable {
+                    onRightClick()
+                }
+                .background(Color(0xFF0F7896))
+                .padding(vertical = 5.dp, horizontal = 12.dp)
+                .size(30.dp),
+            contentDescription = "right",
+            tint = Color.White
+        )
+        Icon(
+            painter = painterResource(R.drawable.keyboard_double_arrow_right),
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable {
+                    onDoubleRightClick()
+                }
+                .background(Color(0xFF1287AB))
+                .padding(vertical = 5.dp, horizontal = 12.dp)
+                .size(30.dp),
+            contentDescription = "double right",
+            tint = Color.White
+        )
+    }
+}
+
+@Preview
+@Composable
+private fun GameWalkthroughControlsPreview() {
+    GameWalkthroughControls()
 }
 
 @Preview

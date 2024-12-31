@@ -28,6 +28,7 @@ import kotlinx.coroutines.tasks.await
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.math.max
+import kotlin.math.min
 
 @HiltViewModel
 class GameViewModel @Inject constructor(
@@ -43,6 +44,9 @@ class GameViewModel @Inject constructor(
     val viewEffect = _viewEffect.asSharedFlow()
 
     private val gameMoves = mutableListOf<Move>()
+    private val gameWalkthroughBoards = mutableListOf<Map<String, CellState>>()
+    private var gameWalkthroughIndex: Int = 0
+    private var initBoardCase: Boolean = true
     private var player1: String? = null
     private var player2: String? = null
     private var player1Color: String? = null
@@ -55,7 +59,8 @@ class GameViewModel @Inject constructor(
                     (repository.getUserId() == player1 && _gameState.value.currentPlayer.toPlayerColor().name != player1Color) ||
                     (repository.getUserId() == player2 && _gameState.value.currentPlayer.toPlayerColor().name == player1Color) ||
                     (_gameState.value.winner != null) ||
-                    (_gameState.value.gameStatus != GameStatus.ONGOING.name)
+                    (_gameState.value.gameStatus != GameStatus.ONGOING.name) ||
+                    _gameState.value.isGameWalkthroughMode
                 ) {
                     return
                 }
@@ -146,6 +151,47 @@ class GameViewModel @Inject constructor(
                 _gameState.value = _gameState.value.copy(gameId = event.gameId)
                 addListenerToGameId(event.gameId)
             }
+
+            is GameEvent.OnGameWalkthroughClick -> {
+                when (event.options) {
+                    GameWalkthroughOption.DOUBLE_LEFT -> {
+                        _gameState.value = _gameState.value.copy(isGameWalkthroughMode = true)
+                        gameWalkthroughIndex = 0
+                        if (gameWalkthroughBoards.isNotEmpty()) {
+                            _gameState.value =
+                                _gameState.value.copy(gameWalkthroughBoardState = gameWalkthroughBoards[gameWalkthroughIndex])
+                        }
+                    }
+
+                    GameWalkthroughOption.LEFT -> {
+                        _gameState.value = _gameState.value.copy(isGameWalkthroughMode = true)
+                        gameWalkthroughIndex = max(0, gameWalkthroughIndex - 1)
+                        if (gameWalkthroughBoards.isNotEmpty()) {
+                            _gameState.value =
+                                _gameState.value.copy(gameWalkthroughBoardState = gameWalkthroughBoards[gameWalkthroughIndex])
+                        }
+                    }
+
+                    GameWalkthroughOption.RIGHT -> {
+                        gameWalkthroughIndex = min(gameMoves.size, gameWalkthroughIndex + 1)
+                        _gameState.value =
+                            _gameState.value.copy(isGameWalkthroughMode = gameWalkthroughIndex != gameMoves.size)
+                        if (gameWalkthroughBoards.isNotEmpty()) {
+                            _gameState.value =
+                                _gameState.value.copy(gameWalkthroughBoardState = gameWalkthroughBoards[gameWalkthroughIndex])
+                        }
+                    }
+
+                    GameWalkthroughOption.DOUBLE_RIGHT -> {
+                        gameWalkthroughIndex = gameMoves.size
+                        _gameState.value = _gameState.value.copy(isGameWalkthroughMode = false)
+                        if (gameWalkthroughBoards.isNotEmpty()) {
+                            _gameState.value =
+                                _gameState.value.copy(gameWalkthroughBoardState = gameWalkthroughBoards[gameWalkthroughIndex])
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -158,19 +204,7 @@ class GameViewModel @Inject constructor(
     }
 
     private fun refreshBoard() {
-        val board = chessEngine.getBoard()
-        val initialBoardState = mutableMapOf<String, CellState>()
-        for (row in board.indices) {
-            for (col in board[row].indices) {
-                val cell = board[row][col]
-                val cellState = CellState(
-                    showDotIndicator = false,
-                    piece = cell.piece?.toShortFormat(),
-                    showPawnPromotionDialog = false
-                )
-                initialBoardState["${'A' + col}${8 - row}".lowercase(Locale.ROOT)] = cellState
-            }
-        }
+        val initialBoardState = getCurrentBoardState()
         val myColor: PlayerColor = when {
             repository.getUserId() == player1 -> if (player1Color == PlayerColor.WHITE.name) PlayerColor.WHITE else PlayerColor.BLACK
             repository.getUserId() == player2 -> if (player1Color == PlayerColor.WHITE.name) PlayerColor.BLACK else PlayerColor.WHITE
@@ -185,6 +219,23 @@ class GameViewModel @Inject constructor(
             currentPlayer = chessEngine.getCurrentPlayer()
         )
         emitWinner()
+    }
+
+    private fun getCurrentBoardState(): MutableMap<String, CellState> {
+        val board = chessEngine.getBoard()
+        val boardState = mutableMapOf<String, CellState>()
+        for (row in board.indices) {
+            for (col in board[row].indices) {
+                val cell = board[row][col]
+                val cellState = CellState(
+                    showDotIndicator = false,
+                    piece = cell.piece?.toShortFormat(),
+                    showPawnPromotionDialog = false
+                )
+                boardState["${'A' + col}${8 - row}".lowercase(Locale.ROOT)] = cellState
+            }
+        }
+        return boardState
     }
 
     private fun makeMoveToDatabase(gameId: String, move: Move, timeLeft: Pair<String, Int>) {
@@ -388,13 +439,21 @@ class GameViewModel @Inject constructor(
     }
 
     private fun processMoves(moves: List<Move>?) {
+        if (gameWalkthroughBoards.isEmpty()) {
+            gameWalkthroughBoards.add(getCurrentBoardState())
+        }
         moves?.let {
             for (move in moves) {
                 chessEngine.makeMove(move.from, move.to)
                 gameMoves.add(move)
+                gameWalkthroughBoards.add(getCurrentBoardState())
             }
         }
-        refreshBoard()
+        if (moves?.isNotEmpty() == true || initBoardCase) {
+            onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.DOUBLE_RIGHT))
+            initBoardCase = false
+            refreshBoard()
+        }
     }
 }
 
@@ -409,12 +468,14 @@ data class GameUiState(
     val gameId: String = "",
     val myColor: PlayerColor? = null,
     val boardState: Map<String, CellState> = mapOf(),
+    val gameWalkthroughBoardState: Map<String, CellState> = mapOf(),
     val gameStatus: String = GameStatus.WAITING_FOR_OPPONENT.name,
     val selectedPosition: String? = null,
     val winner: PlayerColor? = null,
     val currentPlayer: Player = Player.WHITE,
     val whitePlayerTimeLeft: Int = 300,
-    val blackPlayerTimeLeft: Int = 300
+    val blackPlayerTimeLeft: Int = 300,
+    val isGameWalkthroughMode: Boolean = false
 )
 
 data class CellState(
@@ -427,6 +488,7 @@ sealed interface GameEvent {
     data class CellTap(val position: String) : GameEvent
     data class JoinGameAtStart(val gameId: String) : GameEvent
     data class PawnPromotion(val position: String) : GameEvent
+    data class OnGameWalkthroughClick(val options: GameWalkthroughOption) : GameEvent
     data object Undo : GameEvent
     data object Reset : GameEvent
     data object ResetConfirm : GameEvent
@@ -436,4 +498,11 @@ sealed interface GameViewEffect {
     data class OnPawnPromotion(val position: String) : GameViewEffect
     data object OnReset : GameViewEffect
     data object OnGameEnd : GameViewEffect
+}
+
+enum class GameWalkthroughOption {
+    DOUBLE_LEFT,
+    LEFT,
+    RIGHT,
+    DOUBLE_RIGHT
 }
