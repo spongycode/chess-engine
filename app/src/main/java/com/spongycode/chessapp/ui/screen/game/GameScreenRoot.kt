@@ -343,7 +343,11 @@ fun ChessBoardCompose(
                                             uiState.gameWalkthroughBoardState[position]?.showDotIndicator
                                                 ?: false else
                                             uiState.boardState[position]?.showDotIndicator ?: false,
-                                        isCellSelected = uiState.selectedPosition == position
+                                        isCellSelected = !uiState.isGameWalkthroughMode && uiState.selectedPosition == position,
+                                        isHighlighted = if (uiState.isGameWalkthroughMode)
+                                            uiState.gameWalkthroughBoardState[position]?.isHighlighted
+                                                ?: false else
+                                            uiState.boardState[position]?.isHighlighted ?: false
                                     )
                                 }
                             }
@@ -382,11 +386,12 @@ fun ChessCell(
     modifier: Modifier = Modifier,
     piece: String = "",
     showDotIndicator: Boolean = false,
-    isCellSelected: Boolean = false
+    isCellSelected: Boolean = false,
+    isHighlighted: Boolean = false
 ) {
     Box(
         modifier = modifier.background(
-            if (isCellSelected) Color(0xA3F3E164) else Color.Transparent
+            if (isCellSelected || isHighlighted) Color(0xA3F3E164) else Color.Transparent
         ),
         contentAlignment = Alignment.Center
     ) {

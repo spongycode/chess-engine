@@ -10,6 +10,7 @@ import com.google.firebase.database.ValueEventListener
 import com.spongycode.chess_engine.ChessEngine
 import com.spongycode.chess_engine.Player
 import com.spongycode.chess_engine.toShortFormat
+import com.spongycode.chess_engine.transformToPair
 import com.spongycode.chessapp.model.Game
 import com.spongycode.chessapp.model.Move
 import com.spongycode.chessapp.model.PlayerColor
@@ -224,13 +225,30 @@ class GameViewModel @Inject constructor(
     private fun getCurrentBoardState(): MutableMap<String, CellState> {
         val board = chessEngine.getBoard()
         val boardState = mutableMapOf<String, CellState>()
+        var fromRow = -1
+        var fromCol = -1
+        var toRow = -1
+        var toCol = -1
+
+        if (gameMoves.isNotEmpty()) {
+            val lastMove = gameMoves.last()
+            val (fRow, fCol) = lastMove.from.transformToPair()
+            val (tRow, tCol) = lastMove.to.transformToPair()
+            fromRow = fRow
+            fromCol = fCol
+            toRow = tRow
+            toCol = tCol
+        }
+
         for (row in board.indices) {
             for (col in board[row].indices) {
                 val cell = board[row][col]
                 val cellState = CellState(
                     showDotIndicator = false,
                     piece = cell.piece?.toShortFormat(),
-                    showPawnPromotionDialog = false
+                    showPawnPromotionDialog = false,
+                    isHighlighted = (row == fromRow && col == fromCol) ||
+                            (row == toRow && col == toCol)
                 )
                 boardState["${'A' + col}${8 - row}".lowercase(Locale.ROOT)] = cellState
             }
@@ -481,7 +499,8 @@ data class GameUiState(
 data class CellState(
     val showDotIndicator: Boolean,
     val piece: String?,
-    val showPawnPromotionDialog: Boolean
+    val showPawnPromotionDialog: Boolean,
+    val isHighlighted: Boolean = false
 )
 
 sealed interface GameEvent {
