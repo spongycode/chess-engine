@@ -6,6 +6,7 @@ data class Game(
     val player1Color: String? = null,
     val moves: List<Move>? = listOf(),
     val status: String? = null,
+    val requestStatus: String? = null,
     val createdAt: Long? = 0L,
     val updatedAt: Long? = 0L,
     val whitePlayerTimeLeft: Int = 600,

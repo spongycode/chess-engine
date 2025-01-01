@@ -75,10 +75,13 @@ fun GameScreenRoot(
 ) {
     val uiState by viewModel.gameState.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
-    var showPawnPromotionDialog by remember { mutableStateOf(false) }
     var pawnPromotionPosition by remember { mutableStateOf("") }
+    var showPawnPromotionDialog by remember { mutableStateOf(false) }
     var showGameWelcomeDialog by remember { mutableStateOf(true) }
     var showGameEndDialog by remember { mutableStateOf(false) }
+    var showResignDialog by remember { mutableStateOf(false) }
+    var showDrawDialog by remember { mutableStateOf(false) }
+    var showDrawRequestDialog by remember { mutableStateOf(false) }
 
     GameScreen(
         modifier = modifier,
@@ -102,6 +105,18 @@ fun GameScreenRoot(
                 GameViewEffect.OnGameEnd -> {
                     showGameWelcomeDialog = false
                     showGameEndDialog = true
+                }
+
+                GameViewEffect.OnResign -> {
+                    showResignDialog = true
+                }
+
+                GameViewEffect.OnDraw -> {
+                    showDrawDialog = true
+                }
+
+                GameViewEffect.OnDrawRequested -> {
+                    showDrawRequestDialog = true
                 }
             }
         }
@@ -139,11 +154,55 @@ fun GameScreenRoot(
     }
 
     if (showGameEndDialog) {
+        showResignDialog = false
+        showDrawDialog = false
+        showDrawRequestDialog = false
         GameEndDialog(
             winner = uiState.winner,
             playerColor = uiState.myColor,
             onConfirm = {
                 showGameEndDialog = false
+            }
+        )
+    }
+
+    if (showResignDialog) {
+        ConfirmationDialog(
+            title = "Resign..",
+            message = "Are you sure?",
+            onDismiss = { showResignDialog = false },
+            onConfirm = {
+                viewModel.onEvent(GameEvent.ResignConfirm)
+                showResignDialog = false
+            }
+        )
+    }
+
+    if (showDrawDialog) {
+        ConfirmationDialog(
+            title = "Draw..",
+            message = "Are you sure?",
+            onDismiss = { showDrawDialog = false },
+            onConfirm = {
+                viewModel.onEvent(GameEvent.DrawConfirm)
+                showDrawDialog = false
+            }
+        )
+    }
+
+    if (showDrawRequestDialog) {
+        showDrawDialog = false
+        showResignDialog = false
+        ConfirmationDialog(
+            title = "Draw..",
+            message = "Accept DRAW from opponent?",
+            onDismiss = {
+                viewModel.onEvent(GameEvent.DrawReject)
+                showDrawRequestDialog = false
+            },
+            onConfirm = {
+                viewModel.onEvent(GameEvent.DrawAccept)
+                showDrawRequestDialog = false
             }
         )
     }
@@ -190,11 +249,19 @@ fun GameScreen(
             onEvent = onEvent
         )
         GameWalkthroughControls(
+            modifier = Modifier.fillMaxWidth(0.80f),
             onDoubleLeftClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.DOUBLE_LEFT)) },
             onLeftClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.LEFT)) },
             onRightClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.RIGHT)) },
             onDoubleRightClick = { onEvent(GameEvent.OnGameWalkthroughClick(GameWalkthroughOption.DOUBLE_RIGHT)) }
         )
+        if (uiState.myColor != PlayerColor.BOTH && uiState.gameStatus == GameStatus.ONGOING.name) {
+            GameDrawResignControls(
+                modifier = Modifier.fillMaxWidth(0.80f),
+                onResignClick = { onEvent(GameEvent.Resign) },
+                onDrawClick = { onEvent(GameEvent.Draw) }
+            )
+        }
         if (false && uiState.gameStatus == GameStatus.ONGOING.name) {
             Row(
                 modifier = Modifier
@@ -853,7 +920,7 @@ fun Timer(
     if (seconds.length == 1) {
         seconds = "0$seconds"
     }
-    Text(
+    Row(
         modifier = Modifier
             .clip(RoundedCornerShape(5.dp))
             .background(
@@ -865,11 +932,23 @@ fun Timer(
                 )
             )
             .padding(8.dp),
-        text = "$minutes:$seconds",
-        fontSize = 20.sp,
-        fontWeight = FontWeight.W800,
-        color = Color.White
-    )
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.time_24),
+            modifier = Modifier
+                .size(22.dp),
+            contentDescription = "timer icon",
+            tint = Color.White
+        )
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = "$minutes:$seconds",
+            fontSize = 20.sp,
+            fontWeight = FontWeight.W800,
+            color = Color.White
+        )
+    }
 }
 
 @Composable
@@ -886,7 +965,7 @@ fun GameWalkthroughControls(
             .fillMaxWidth()
             .padding(5.dp)
             .wrapContentHeight(),
-        horizontalArrangement = Arrangement.Absolute.SpaceAround
+        horizontalArrangement = Arrangement.Absolute.SpaceBetween
     ) {
         Icon(
             painter = painterResource(R.drawable.keyboard_double_arrow_left),
@@ -895,7 +974,7 @@ fun GameWalkthroughControls(
                 .clickable {
                     onDoubleLeftClick()
                 }
-                .background(Color(0xFF1287AB))
+                .background(Color(0xFF0F7896))
                 .padding(vertical = 5.dp, horizontal = 12.dp)
                 .size(30.dp),
             contentDescription = "double left",
@@ -908,7 +987,7 @@ fun GameWalkthroughControls(
                 .clickable {
                     onLeftClick()
                 }
-                .background(Color(0xFF0F7896))
+                .background(Color(0xFF1287AB))
                 .padding(vertical = 5.dp, horizontal = 12.dp)
                 .size(30.dp),
             contentDescription = "left",
@@ -922,7 +1001,7 @@ fun GameWalkthroughControls(
                 .clickable {
                     onRightClick()
                 }
-                .background(Color(0xFF0F7896))
+                .background(Color(0xFF1287AB))
                 .padding(vertical = 5.dp, horizontal = 12.dp)
                 .size(30.dp),
             contentDescription = "right",
@@ -935,7 +1014,7 @@ fun GameWalkthroughControls(
                 .clickable {
                     onDoubleRightClick()
                 }
-                .background(Color(0xFF1287AB))
+                .background(Color(0xFF0F7896))
                 .padding(vertical = 5.dp, horizontal = 12.dp)
                 .size(30.dp),
             contentDescription = "double right",
@@ -944,10 +1023,124 @@ fun GameWalkthroughControls(
     }
 }
 
+
+@Composable
+fun GameDrawResignControls(
+    modifier: Modifier = Modifier,
+    onResignClick: () -> Unit = {},
+    onDrawClick: () -> Unit = {}
+) {
+    Row(
+        modifier = modifier
+            .background(Color.White)
+            .fillMaxWidth()
+            .padding(5.dp)
+            .wrapContentHeight(),
+        horizontalArrangement = Arrangement.Absolute.SpaceBetween
+    ) {
+        Button(
+            onClick = { onResignClick() },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD9284A)),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.flag_24),
+                contentDescription = "left",
+                tint = Color.White
+            )
+            Text("Resign", color = Color.White, fontSize = 16.sp)
+        }
+        Button(
+            onClick = { onDrawClick() },
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0634C7)),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Text("½ ", color = Color.White, fontSize = 20.sp)
+            Text("Draw", color = Color.White, fontSize = 16.sp)
+        }
+    }
+}
+
+@Composable
+fun ConfirmationDialog(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(20.dp)
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = title,
+                    fontWeight = FontWeight.W800,
+                    fontSize = 25.sp,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(25.dp))
+                Text(
+                    textAlign = TextAlign.Center,
+                    text = message,
+                    fontWeight = FontWeight.W500,
+                    fontSize = 18.sp,
+                    color = Color.Black
+                )
+                Spacer(modifier = Modifier.height(30.dp))
+                Row {
+                    Button(
+                        onClick = { onDismiss() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3538EF)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("No", color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(20.dp))
+                    Button(
+                        onClick = { onConfirm() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD9284A)),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Yes", color = Color.White)
+                    }
+                }
+            }
+        }
+    }
+
+}
+
 @Preview
 @Composable
 private fun GameWalkthroughControlsPreview() {
     GameWalkthroughControls()
+}
+
+@Preview
+@Composable
+private fun GameDrawResignControlsPreview() {
+    GameDrawResignControls()
+}
+
+@Preview
+@Composable
+private fun ConfirmationDialogPreview() {
+    ConfirmationDialog(
+        title = "Resign..",
+        message = "Are you sure?",
+        onConfirm = {},
+        onDismiss = {}
+    )
 }
 
 @Preview

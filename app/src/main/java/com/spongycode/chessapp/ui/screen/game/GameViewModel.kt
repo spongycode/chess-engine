@@ -52,6 +52,7 @@ class GameViewModel @Inject constructor(
     private var player2: String? = null
     private var player1Color: String? = null
     private var timerJob: Job? = null
+    private var lastIndexDrawDetected = -1
 
     fun onEvent(event: GameEvent) {
         when (event) {
@@ -193,6 +194,42 @@ class GameViewModel @Inject constructor(
                     }
                 }
             }
+
+            GameEvent.Resign -> {
+                viewModelScope.launch {
+                    _viewEffect.emit(GameViewEffect.OnResign)
+                }
+            }
+
+            GameEvent.ResignConfirm -> {
+                viewModelScope.launch {
+                    resignGameOnDatabase(_gameState.value.gameId)
+                }
+            }
+
+            GameEvent.Draw -> {
+                viewModelScope.launch {
+                    _viewEffect.emit(GameViewEffect.OnDraw)
+                }
+            }
+
+            GameEvent.DrawConfirm -> {
+                viewModelScope.launch {
+                    requestDrawOnDatabase(_gameState.value.gameId)
+                }
+            }
+
+            GameEvent.DrawAccept -> {
+                viewModelScope.launch {
+                    acceptDrawOnDatabase(_gameState.value.gameId)
+                }
+            }
+
+            GameEvent.DrawReject -> {
+                viewModelScope.launch {
+                    rejectDrawOnDatabase(_gameState.value.gameId)
+                }
+            }
         }
     }
 
@@ -313,7 +350,7 @@ class GameViewModel @Inject constructor(
                                 processMoves(moves?.takeLast(moves.size - gameMoves.size))
                             }
 
-                            GameStatus.WHITE_WON.name -> {
+                            GameStatus.WHITE_WON_ON_TIME.name, GameStatus.WHITE_WON_BY_RESIGNATION.name -> {
                                 resumeTimer()
                                 val moves = it.moves
                                 processMoves(moves?.takeLast(moves.size - gameMoves.size))
@@ -321,12 +358,46 @@ class GameViewModel @Inject constructor(
                                 emitWinner()
                             }
 
-                            GameStatus.BLACK_WON.name -> {
+                            GameStatus.BLACK_WON_ON_TIME.name, GameStatus.BLACK_WON_BY_RESIGNATION.name -> {
                                 resumeTimer()
                                 val moves = it.moves
                                 processMoves(moves?.takeLast(moves.size - gameMoves.size))
                                 _gameState.value = _gameState.value.copy(winner = PlayerColor.BLACK)
                                 emitWinner()
+                            }
+
+                            GameStatus.DRAW_BY_AGREEMENT.name -> {
+                                resumeTimer()
+                                val moves = it.moves
+                                processMoves(moves?.takeLast(moves.size - gameMoves.size))
+                                _gameState.value = _gameState.value.copy(winner = PlayerColor.BOTH)
+                                emitWinner()
+                            }
+
+                            else -> {
+
+                            }
+                        }
+
+                        when (it.requestStatus) {
+                            GameRequestStatus.DRAW_REQUESTED_BY_WHITE.name,
+                            GameRequestStatus.DRAW_REQUESTED_BY_BLACK.name -> {
+                                if (lastIndexDrawDetected == gameMoves.size) {
+                                    viewModelScope.launch {
+                                        rejectDrawOnDatabase(_gameState.value.gameId)
+                                    }
+                                    return
+                                }
+                                if ((_gameState.value.myColor == PlayerColor.WHITE &&
+                                            it.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_BLACK.name) ||
+                                    (_gameState.value.myColor == PlayerColor.BLACK &&
+                                            it.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_WHITE.name)
+                                ) {
+                                    viewModelScope.launch {
+                                        lastIndexDrawDetected = gameMoves.size
+                                        _viewEffect.emit(GameViewEffect.OnDrawRequested)
+                                    }
+                                }
                             }
 
                             else -> {
@@ -373,8 +444,170 @@ class GameViewModel @Inject constructor(
         }
     }
 
+    private suspend fun requestDrawOnDatabase(gameId: String) {
+        try {
+            val gameRef = firebaseDatabase.getReference("games")
+            val snapshot = gameRef.child(gameId).get().await()
+            if (snapshot.exists()) {
+                val game = snapshot.getValue(Game::class.java)
+                if (game?.status == GameStatus.ONGOING.name) {
+                    if (repository.getUserId() == game.player1 || repository.getUserId() == game.player2) {
+                        if (_gameState.value.myColor == PlayerColor.WHITE) {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "requestStatus" to GameRequestStatus.DRAW_REQUESTED_BY_WHITE.name
+                                    )
+                                )
+                                .await()
+                        } else {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "requestStatus" to GameRequestStatus.DRAW_REQUESTED_BY_BLACK.name
+                                    )
+                                )
+                                .await()
+                        }
+                    }
+                    println("Draw requested successfully")
+                }
+            } else {
+                println("Game does not exist!")
+            }
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
+    private suspend fun acceptDrawOnDatabase(gameId: String) {
+        try {
+            val gameRef = firebaseDatabase.getReference("games")
+            val snapshot = gameRef.child(gameId).get().await()
+            if (snapshot.exists()) {
+                val game = snapshot.getValue(Game::class.java)
+                if (game?.status == GameStatus.ONGOING.name) {
+                    if (repository.getUserId() == game.player1 || repository.getUserId() == game.player2) {
+                        if (game.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_WHITE.name &&
+                            _gameState.value.myColor == PlayerColor.BLACK
+                        ) {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "status" to GameStatus.DRAW_BY_AGREEMENT.name,
+                                        "requestStatus" to null
+                                    )
+                                )
+                                .await()
+                        } else if (
+                            game.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_BLACK.name &&
+                            _gameState.value.myColor == PlayerColor.WHITE
+                        ) {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "status" to GameStatus.DRAW_BY_AGREEMENT.name,
+                                        "requestStatus" to null
+                                    )
+                                )
+                                .await()
+                        }
+                    }
+                    println("Game drawn successfully")
+                }
+            } else {
+                println("Game does not exist!")
+            }
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
+    private suspend fun rejectDrawOnDatabase(gameId: String) {
+        try {
+            val gameRef = firebaseDatabase.getReference("games")
+            val snapshot = gameRef.child(gameId).get().await()
+            if (snapshot.exists()) {
+                val game = snapshot.getValue(Game::class.java)
+                if (game?.status == GameStatus.ONGOING.name) {
+                    if (repository.getUserId() == game.player1 || repository.getUserId() == game.player2) {
+                        if (game.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_WHITE.name &&
+                            _gameState.value.myColor == PlayerColor.BLACK
+                        ) {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "requestStatus" to null
+                                    )
+                                )
+                                .await()
+                        } else if (
+                            game.requestStatus == GameRequestStatus.DRAW_REQUESTED_BY_BLACK.name &&
+                            _gameState.value.myColor == PlayerColor.WHITE
+                        ) {
+                            gameRef.child(gameId)
+                                .updateChildren(
+                                    mapOf(
+                                        "whitePlayerTimeLeft" to _gameState.value.whitePlayerTimeLeft,
+                                        "blackPlayerTimeLeft" to _gameState.value.blackPlayerTimeLeft,
+                                        "requestStatus" to null
+                                    )
+                                )
+                                .await()
+                        }
+                    }
+                    println("Game drawn successfully")
+                }
+            } else {
+                println("Game does not exist!")
+            }
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
+    private suspend fun resignGameOnDatabase(gameId: String) {
+        try {
+            val gameRef = firebaseDatabase.getReference("games")
+            val snapshot = gameRef.child(gameId).get().await()
+            if (snapshot.exists()) {
+                val game = snapshot.getValue(Game::class.java)
+                if (game?.status == GameStatus.ONGOING.name) {
+                    if (repository.getUserId() == game.player1 || repository.getUserId() == game.player2) {
+                        if (_gameState.value.myColor == PlayerColor.WHITE) {
+                            gameRef.child(gameId)
+                                .updateChildren(mapOf("status" to GameStatus.BLACK_WON_BY_RESIGNATION.name))
+                                .await()
+                        } else {
+                            gameRef.child(gameId)
+                                .updateChildren(mapOf("status" to GameStatus.WHITE_WON_BY_RESIGNATION.name))
+                                .await()
+                        }
+                    }
+                    println("Game Resigned successfully")
+                }
+            } else {
+                println("Game does not exist!")
+            }
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
+        }
+    }
+
     private fun resumeTimer() {
-        if (_gameState.value.winner == null) {
+        if (_gameState.value.gameStatus == GameStatus.ONGOING.name &&
+            _gameState.value.winner == null
+        ) {
             timerJob = viewModelScope.launch {
                 var elapsedSeconds = 0
                 while (true) {
@@ -382,11 +615,17 @@ class GameViewModel @Inject constructor(
                     elapsedSeconds += 1
                     if (_gameState.value.currentPlayer == Player.WHITE) {
                         _gameState.value = _gameState.value.copy(
-                            whitePlayerTimeLeft = max(0, _gameState.value.whitePlayerTimeLeft - 1)
+                            whitePlayerTimeLeft = max(
+                                0,
+                                _gameState.value.whitePlayerTimeLeft - 1
+                            )
                         )
                     } else {
                         _gameState.value = _gameState.value.copy(
-                            blackPlayerTimeLeft = max(0, _gameState.value.blackPlayerTimeLeft - 1)
+                            blackPlayerTimeLeft = max(
+                                0,
+                                _gameState.value.blackPlayerTimeLeft - 1
+                            )
                         )
                     }
 
@@ -412,7 +651,7 @@ class GameViewModel @Inject constructor(
                         _viewEffect.emit(GameViewEffect.OnGameEnd)
                         updateGameOverState(
                             _gameState.value.gameId,
-                            "status" to GameStatus.WHITE_WON.name,
+                            "status" to GameStatus.WHITE_WON_ON_TIME.name,
                             "blackPlayerTimeLeft" to 0
                         )
                     }
@@ -434,7 +673,7 @@ class GameViewModel @Inject constructor(
                         _viewEffect.emit(GameViewEffect.OnGameEnd)
                         updateGameOverState(
                             _gameState.value.gameId,
-                            "status" to GameStatus.BLACK_WON.name,
+                            "status" to GameStatus.BLACK_WON_ON_TIME.name,
                             "whitePlayerTimeLeft" to 0
                         )
                     }
@@ -478,8 +717,18 @@ class GameViewModel @Inject constructor(
 enum class GameStatus {
     WAITING_FOR_OPPONENT,
     ONGOING,
-    BLACK_WON,
-    WHITE_WON
+    BLACK_WON_ON_TIME,
+    WHITE_WON_ON_TIME,
+    BLACK_WON_BY_RESIGNATION,
+    WHITE_WON_BY_RESIGNATION,
+    DRAW_BY_AGREEMENT
+}
+
+enum class GameRequestStatus {
+    DRAW_REQUESTED_BY_WHITE,
+    DRAW_REQUESTED_BY_BLACK,
+    TAKE_BACK_REQUESTED_BY_WHITE,
+    TAKE_BACK_REQUESTED_BY_BLACK
 }
 
 data class GameUiState(
@@ -511,12 +760,21 @@ sealed interface GameEvent {
     data object Undo : GameEvent
     data object Reset : GameEvent
     data object ResetConfirm : GameEvent
+    data object Resign : GameEvent
+    data object ResignConfirm : GameEvent
+    data object Draw : GameEvent
+    data object DrawConfirm : GameEvent
+    data object DrawAccept : GameEvent
+    data object DrawReject : GameEvent
 }
 
 sealed interface GameViewEffect {
     data class OnPawnPromotion(val position: String) : GameViewEffect
     data object OnReset : GameViewEffect
     data object OnGameEnd : GameViewEffect
+    data object OnResign : GameViewEffect
+    data object OnDraw : GameViewEffect
+    data object OnDrawRequested : GameViewEffect
 }
 
 enum class GameWalkthroughOption {
