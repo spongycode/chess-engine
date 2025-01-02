@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -63,6 +65,7 @@ import com.spongycode.chess_engine.Player.WHITE
 import com.spongycode.chessapp.R
 import com.spongycode.chessapp.model.PlayerColor
 import com.spongycode.chessapp.util.getResource
+import com.spongycode.chessapp.util.shareGame
 import com.spongycode.chessapp.util.toPlayerColor
 import kotlinx.coroutines.flow.collectLatest
 import java.util.Locale
@@ -73,6 +76,7 @@ fun GameScreenRoot(
     gameId: String,
     viewModel: GameViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.gameState.collectAsState()
     var showResetDialog by remember { mutableStateOf(false) }
     var pawnPromotionPosition by remember { mutableStateOf("") }
@@ -117,6 +121,10 @@ fun GameScreenRoot(
 
                 GameViewEffect.OnDrawRequested -> {
                     showDrawRequestDialog = true
+                }
+
+                GameViewEffect.ShareGame -> {
+                    context.shareGame(gameId)
                 }
             }
         }
@@ -243,6 +251,20 @@ fun GameScreen(
                 bgColor = Color(0xFFF3D6BB),
                 gameId = gameId
             )
+            Icon(
+                imageVector = Icons.Default.Share,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable {
+                        onEvent(GameEvent.ShareGame)
+                    }
+                    .background(Color(0xFF1287AB))
+                    .padding(12.dp)
+                    .size(25.dp),
+                contentDescription = "left",
+                tint = Color.White
+            )
+
         }
         ChessBoardCompose(
             uiState = uiState,

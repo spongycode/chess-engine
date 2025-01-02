@@ -230,6 +230,12 @@ class GameViewModel @Inject constructor(
                     rejectDrawOnDatabase(_gameState.value.gameId)
                 }
             }
+
+            GameEvent.ShareGame -> {
+                viewModelScope.launch {
+                    _viewEffect.emit(GameViewEffect.ShareGame)
+                }
+            }
         }
     }
 
@@ -766,6 +772,7 @@ sealed interface GameEvent {
     data object DrawConfirm : GameEvent
     data object DrawAccept : GameEvent
     data object DrawReject : GameEvent
+    data object ShareGame : GameEvent
 }
 
 sealed interface GameViewEffect {
@@ -775,6 +782,7 @@ sealed interface GameViewEffect {
     data object OnResign : GameViewEffect
     data object OnDraw : GameViewEffect
     data object OnDrawRequested : GameViewEffect
+    data object ShareGame : GameViewEffect
 }
 
 enum class GameWalkthroughOption {

@@ -1,5 +1,7 @@
 package com.spongycode.chessapp.util
 
+import android.content.Context
+import android.content.Intent
 import com.spongycode.chess_engine.Player
 import com.spongycode.chessapp.R
 import com.spongycode.chessapp.model.PlayerColor
@@ -28,4 +30,15 @@ fun Player.toPlayerColor(): PlayerColor {
         Player.BLACK -> PlayerColor.BLACK
         Player.BOTH -> PlayerColor.BOTH
     }
+}
+
+fun Context.shareGame(gameId: String) {
+    val textToShare =
+        "Join the game or watch the action unfold! ♟\uFE0F\n\nClick the link to play or spectate: https://chess--app.vercel.app/redirect?gameId=$gameId"
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, textToShare)
+    }
+    val chooser = Intent.createChooser(shareIntent, "Share via")
+    this.startActivity(chooser)
 }

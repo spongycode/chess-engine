@@ -65,7 +65,7 @@ class HomeViewModel @Inject constructor(
             val snapshot = gameRef.child(gameId).get().await()
             if (snapshot.exists()) {
                 val game = snapshot.getValue(Game::class.java)
-                if (game?.player2 == null) {
+                if (game?.player2 == null && game?.player1 != player2Id) {
                     val updates = mapOf(
                         "player2" to player2Id,
                         "status" to GameStatus.ONGOING.name,
