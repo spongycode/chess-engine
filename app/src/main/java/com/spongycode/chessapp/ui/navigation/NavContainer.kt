@@ -15,9 +15,11 @@ import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.spongycode.chessapp.ui.screen.game.GameScreenRoot
 import com.spongycode.chessapp.ui.screen.home.HomeScreenRoot
+import com.spongycode.chessapp.ui.screen.practice.PracticeScreenRoot
 import com.spongycode.chessapp.util.Constants.GAME_ID
 import com.spongycode.chessapp.util.Constants.GAME_SCREEN
 import com.spongycode.chessapp.util.Constants.HOME_SCREEN
+import com.spongycode.chessapp.util.Constants.PRACTICE_SCREEN
 
 val LocalNavController = compositionLocalOf<NavHostController> { error("No NavController") }
 
@@ -26,7 +28,8 @@ fun NavContainer(startDestination: String) {
     val navController = rememberNavController()
     CompositionLocalProvider(LocalNavController provides navController) {
         NavHost(navController = navController, startDestination = startDestination) {
-            composable(route = HOME_SCREEN,
+            composable(
+                route = HOME_SCREEN,
                 enterTransition = {
                     slideIntoContainer(
                         AnimatedContentTransitionScope.SlideDirection.Start, tween(300)
@@ -59,9 +62,14 @@ fun NavContainer(startDestination: String) {
                 }
             ) { backStackEntry ->
                 val gameId = backStackEntry.arguments?.getString(GAME_ID)
-                if (gameId != null) {
+                gameId?.let {
                     GameScreenRoot(gameId = gameId)
                 }
+            }
+            composable(
+                route = PRACTICE_SCREEN
+            ) {
+                PracticeScreenRoot()
             }
         }
     }

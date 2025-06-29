@@ -8,7 +8,7 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
-val secretsPropsFile = rootProject.file("secrets.properties")
+val secretsPropsFile = rootProject.file("local.properties")
 val secrets = Properties()
 if (secretsPropsFile.exists()) {
     secrets.load(secretsPropsFile.inputStream())
